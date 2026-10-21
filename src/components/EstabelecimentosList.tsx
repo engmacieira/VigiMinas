@@ -79,9 +79,11 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
       const matchBusca = !termo || 
         est.razaoSocial.toLowerCase().includes(termo) ||
         (est.nomeFantasia && est.nomeFantasia.toLowerCase().includes(termo)) ||
+        (est.identificacaoMunicipal && est.identificacaoMunicipal.toLowerCase().includes(termo)) ||
         est.cnpjCpf.replace(/\D/g, '').includes(termo.replace(/\D/g, '')) ||
         est.cnaeCodigo.toLowerCase().includes(termo) ||
         est.cnaeDescricao.toLowerCase().includes(termo) ||
+        (est.cnaesSecundarios && est.cnaesSecundarios.some(c => c.toLowerCase().includes(termo))) ||
         (est.motivoExclusao && est.motivoExclusao.toLowerCase().includes(termo)) ||
         (est.deletedBy && est.deletedBy.toLowerCase().includes(termo)) ||
         est.endereco.bairro.toLowerCase().includes(termo);
@@ -389,19 +391,34 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                               {est.nomeFantasia}
                             </span>
                           )}
-                          <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
+                          <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
                             <span className="font-mono bg-white px-1 py-0.2 rounded border border-rose-200 text-rose-800">
                               {est.cnpjCpf}
                             </span>
+                            {est.identificacaoMunicipal && (
+                              <span className="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200 text-[10px]" title="Identificação Municipal">
+                                IM: {est.identificacaoMunicipal}
+                              </span>
+                            )}
                             <span>• {est.endereco.bairro}</span>
                           </div>
                         </td>
 
                         {/* CNAE */}
                         <td className="py-3 px-4 max-w-xs">
-                          <span className="font-mono font-semibold text-slate-700 block text-[11px]">
-                            {est.cnaeCodigo}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-semibold text-slate-700 text-[11px]">
+                              {est.cnaeCodigo}
+                            </span>
+                            {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
+                              <span 
+                                className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-100 text-rose-800 border border-rose-200"
+                                title={`CNAEs Secundários:\n${est.cnaesSecundarios.join('\n')}`}
+                              >
+                                +{est.cnaesSecundarios.length} sec.
+                              </span>
+                            )}
+                          </div>
                           <span className="text-slate-600 text-[11px] line-clamp-2" title={est.cnaeDescricao}>
                             {est.cnaeDescricao}
                           </span>
@@ -466,19 +483,34 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                             {est.nomeFantasia}
                           </span>
                         )}
-                        <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
+                        <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
                           <span className="font-mono bg-slate-100 px-1 py-0.2 rounded text-slate-700">
                             {est.cnpjCpf}
                           </span>
+                          {est.identificacaoMunicipal && (
+                            <span className="font-mono bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200 text-[10px] font-semibold" title="Identificação Municipal">
+                              IM: {est.identificacaoMunicipal}
+                            </span>
+                          )}
                           <span>• {est.endereco.bairro}</span>
                         </div>
                       </td>
 
                       {/* CNAE */}
                       <td className="py-3 px-4 max-w-xs">
-                        <span className="font-mono font-semibold text-slate-700 block text-[11px]">
-                          {est.cnaeCodigo}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono font-semibold text-slate-700 text-[11px]">
+                            {est.cnaeCodigo}
+                          </span>
+                          {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
+                            <span 
+                              className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              title={`CNAEs Secundários:\n${est.cnaesSecundarios.join('\n')}`}
+                            >
+                              +{est.cnaesSecundarios.length} sec.
+                            </span>
+                          )}
+                        </div>
                         <span className="text-slate-600 text-[11px] line-clamp-2" title={est.cnaeDescricao}>
                           {est.cnaeDescricao}
                         </span>
@@ -607,9 +639,15 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                       <h3 className="font-bold text-slate-900 text-sm leading-tight">
                         {est.razaoSocial}
                       </h3>
-                      <p className="text-xs text-slate-500 mt-0.5 font-mono">
-                        {est.cnpjCpf} • {est.endereco.bairro}
-                      </p>
+                      <div className="text-xs text-slate-500 mt-0.5 font-mono flex items-center gap-1.5 flex-wrap">
+                        <span>{est.cnpjCpf}</span>
+                        {est.identificacaoMunicipal && (
+                          <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200">
+                            IM: {est.identificacaoMunicipal}
+                          </span>
+                        )}
+                        <span>• {est.endereco.bairro}</span>
+                      </div>
                     </div>
                     {getRiscoBadge(est.nivelRisco)}
                   </div>
@@ -648,17 +686,41 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                     <h3 className="font-bold text-slate-900 text-sm leading-tight">
                       {est.razaoSocial}
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5 font-mono">
-                      {est.cnpjCpf} • {est.endereco.bairro}
-                    </p>
+                    <div className="text-xs text-slate-500 mt-0.5 font-mono flex items-center gap-1.5 flex-wrap">
+                      <span>{est.cnpjCpf}</span>
+                      {est.identificacaoMunicipal && (
+                        <span className="text-[10px] bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200 font-semibold">
+                          IM: {est.identificacaoMunicipal}
+                        </span>
+                      )}
+                      <span>• {est.endereco.bairro}</span>
+                    </div>
                   </div>
                   {getRiscoBadge(est.nivelRisco)}
                 </div>
 
-                <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 space-y-1">
+                <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 space-y-1.5">
                   <p className="line-clamp-2">
-                    <strong className="text-slate-800">Atividade:</strong> {est.cnaeDescricao}
+                    <strong className="text-slate-800">CNAE Principal:</strong> {est.cnaeCodigo} - {est.cnaeDescricao}
                   </p>
+                  {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
+                    <div className="pt-0.5">
+                      <span className="text-[11px] text-slate-700 font-semibold block mb-1">
+                        CNAEs Secundários ({est.cnaesSecundarios.length}):
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {est.cnaesSecundarios.map((sec, idx) => (
+                          <span 
+                            key={idx} 
+                            className="inline-block text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200"
+                            title={sec}
+                          >
+                            {sec}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 flex-wrap pt-1">
                     {getAlvaraBadge(est.situacaoAlvara)}
                     {isInspecionado2026 ? (

@@ -21,12 +21,14 @@ export interface Contato {
 export interface Estabelecimento {
   id: string;
   cnpjCpf: string;
+  identificacaoMunicipal?: string; // Identificação / Inscrição Municipal (alfanumérico, opcional)
   razaoSocial: string;
   nomeFantasia: string;
   endereco: Endereco;
   contato: Contato;
-  cnaeCodigo: string;
-  cnaeDescricao: string;
+  cnaeCodigo: string; // CNAE Principal (obrigatório)
+  cnaeDescricao: string; // Descrição da Atividade Principal
+  cnaesSecundarios?: string[]; // CNAEs Secundários (opcional)
   nivelRisco: NivelRisco;
   dataUltimaInspecaoInicio: string; // YYYY-MM-DD
   dataUltimaInspecaoFim: string; // YYYY-MM-DD

@@ -9,7 +9,11 @@ import {
   FileText, 
   Calendar,
   AlertTriangle,
-  Trash2
+  Trash2,
+  Plus,
+  Tag,
+  Layers,
+  Check
 } from 'lucide-react';
 import { 
   Estabelecimento, 
@@ -47,6 +51,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
   const [formData, setFormData] = useState<Estabelecimento>({
     id: '',
     cnpjCpf: '',
+    identificacaoMunicipal: '',
     razaoSocial: '',
     nomeFantasia: '',
     endereco: {
@@ -62,6 +67,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
     },
     cnaeCodigo: '',
     cnaeDescricao: '',
+    cnaesSecundarios: [],
     nivelRisco: 'Risco II',
     dataUltimaInspecaoInicio: '',
     dataUltimaInspecaoFim: '',
@@ -76,16 +82,24 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
     fiscaisUltimaInspecao: [FISCAIS_MUNICIPIO[0]]
   });
 
+  const [novoCnaeSecundarioCodigo, setNovoCnaeSecundarioCodigo] = useState('');
+  const [novoCnaeSecundarioDescricao, setNovoCnaeSecundarioDescricao] = useState('');
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (estabelecimentoParaEditar) {
-      setFormData(estabelecimentoParaEditar);
+      setFormData({
+        ...estabelecimentoParaEditar,
+        identificacaoMunicipal: estabelecimentoParaEditar.identificacaoMunicipal || '',
+        cnaesSecundarios: estabelecimentoParaEditar.cnaesSecundarios || []
+      });
     } else {
       setFormData({
         id: `braunas-est-${Date.now()}`,
         cnpjCpf: '',
+        identificacaoMunicipal: '',
         razaoSocial: '',
         nomeFantasia: '',
         endereco: {
@@ -101,6 +115,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
         },
         cnaeCodigo: '47.11-3/02',
         cnaeDescricao: 'Comércio varejista de mercadorias em geral (Minimercados, mercearias e armazéns)',
+        cnaesSecundarios: [],
         nivelRisco: 'Risco II',
         dataUltimaInspecaoInicio: '',
         dataUltimaInspecaoFim: '',
@@ -115,6 +130,8 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
         fiscaisUltimaInspecao: [FISCAIS_MUNICIPIO[0]]
       });
     }
+    setNovoCnaeSecundarioCodigo('');
+    setNovoCnaeSecundarioDescricao('');
     setErrors({});
   }, [estabelecimentoParaEditar, isOpen]);
 
@@ -126,6 +143,35 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
       cnaeCodigo: cnaeItem.codigo,
       cnaeDescricao: cnaeItem.descricao,
       nivelRisco: cnaeItem.risco as NivelRisco
+    }));
+  };
+
+  const handleAdicionarCnaeSecundario = (codigoParam?: string, descricaoParam?: string) => {
+    const cod = (codigoParam || novoCnaeSecundarioCodigo).trim();
+    const desc = (descricaoParam || novoCnaeSecundarioDescricao).trim();
+    if (!cod) return;
+
+    const textoCompleto = desc ? `${cod} - ${desc}` : cod;
+    const listaAtual = formData.cnaesSecundarios || [];
+
+    // Não duplicar
+    if (listaAtual.includes(textoCompleto) || listaAtual.some(item => item.startsWith(cod))) {
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      cnaesSecundarios: [...listaAtual, textoCompleto]
+    }));
+
+    setNovoCnaeSecundarioCodigo('');
+    setNovoCnaeSecundarioDescricao('');
+  };
+
+  const handleRemoverCnaeSecundario = (indexParaRemover: number) => {
+    setFormData(prev => ({
+      ...prev,
+      cnaesSecundarios: (prev.cnaesSecundarios || []).filter((_, i) => i !== indexParaRemover)
     }));
   };
 
@@ -143,7 +189,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
     }
 
     if (!formData.cnaeCodigo.trim()) {
-      errs.cnaeCodigo = 'Código CNAE é obrigatório.';
+      errs.cnaeCodigo = 'CNAE Principal é de preenchimento obrigatório.';
     }
 
     if (!formData.endereco.logradouro.trim()) {
@@ -261,7 +307,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Nome Fantasia
@@ -272,6 +318,20 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                   value={formData.nomeFantasia}
                   onChange={(e) => setFormData({ ...formData, nomeFantasia: e.target.value })}
                   className="w-full min-h-[44px] text-xs px-3 rounded-lg border border-slate-300 focus:border-emerald-600 outline-none text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Identificação Municipal</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Opcional</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: IM-1420 ou 8492-A"
+                  value={formData.identificacaoMunicipal || ''}
+                  onChange={(e) => setFormData({ ...formData, identificacaoMunicipal: e.target.value })}
+                  className="w-full min-h-[44px] text-xs px-3 rounded-lg border border-slate-300 focus:border-emerald-600 outline-none text-slate-800 font-mono"
                 />
               </div>
 
@@ -293,66 +353,177 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
           </div>
 
           {/* Seção 2: Atividade Econômica e Risco */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center gap-2 pb-1 border-b border-slate-200">
               <AlertTriangle className="w-4 h-4 text-emerald-700" strokeWidth={2} />
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                2. Atividade Econômica (CNAE) e Nível de Risco Sanitário
+                2. Atividade Econômica (CNAE Principal e Secundários) e Risco Sanitário
               </h3>
             </div>
 
-            <div>
-              <span className="block text-xs font-semibold text-slate-600 mb-1">
-                Atividades Típicas em Braúnas/MG:
-              </span>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 bg-slate-50 rounded-lg border border-slate-200">
-                {CNAE_LISTA_COMUM.map((item) => (
+            {/* Bloco 2.1: CNAE Principal - Obrigatório */}
+            <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5 uppercase tracking-wide">
+                  <Tag className="w-3.5 h-3.5 text-emerald-700" />
+                  CNAE Principal (Obrigatório)
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Enquadramento Oficial
+                </span>
+              </div>
+
+              <div>
+                <span className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Atividades Típicas em Braúnas/MG (Clique para preencher o CNAE Principal):
+                </span>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 bg-white rounded-lg border border-slate-200">
+                  {CNAE_LISTA_COMUM.map((item) => (
+                    <button
+                      key={item.codigo}
+                      type="button"
+                      onClick={() => handleCnaeSelect(item)}
+                      className={`min-h-[34px] text-[11px] px-2.5 py-1 rounded border text-left transition cursor-pointer flex items-center ${
+                        formData.cnaeCodigo === item.codigo
+                          ? 'bg-emerald-700 text-white border-emerald-700 font-bold'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="font-mono mr-1">{item.codigo}</span>
+                      <span>{item.descricao.slice(0, 26)}...</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Código CNAE Principal *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: 47.11-3/02"
+                    value={formData.cnaeCodigo}
+                    onChange={(e) => setFormData({ ...formData, cnaeCodigo: e.target.value })}
+                    className={`w-full min-h-[44px] text-xs px-3 rounded-lg border ${
+                      errors.cnaeCodigo ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300 focus:border-emerald-600'
+                    } outline-none font-mono text-slate-800 bg-white`}
+                  />
+                  {errors.cnaeCodigo && <p className="text-[11px] text-rose-600 mt-1">{errors.cnaeCodigo}</p>}
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Descrição da Atividade Principal *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Descrição formal da atividade principal"
+                    value={formData.cnaeDescricao}
+                    onChange={(e) => setFormData({ ...formData, cnaeDescricao: e.target.value })}
+                    className="w-full min-h-[44px] text-xs px-3 rounded-lg border border-slate-300 focus:border-emerald-600 outline-none text-slate-800 bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Bloco 2.2: CNAEs Secundários - Opcional */}
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wide">
+                    <Layers className="w-3.5 h-3.5 text-teal-600" />
+                    CNAEs Secundários (Atividades Adicionais)
+                  </span>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Campo opcional para registrar outras atividades econômicas exercidas pelo mesmo estabelecimento.
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                  {(formData.cnaesSecundarios || []).length} secundário(s)
+                </span>
+              </div>
+
+              {/* Formulário de Adição de CNAE Secundário */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+                <div className="sm:col-span-4">
+                  <input
+                    type="text"
+                    placeholder="Código (ex: 47.21-1/03)"
+                    value={novoCnaeSecundarioCodigo}
+                    onChange={(e) => setNovoCnaeSecundarioCodigo(e.target.value)}
+                    className="w-full min-h-[40px] text-xs px-3 rounded-lg border border-slate-300 focus:border-teal-600 outline-none font-mono text-slate-800 bg-white"
+                  />
+                </div>
+                <div className="sm:col-span-6">
+                  <input
+                    type="text"
+                    placeholder="Descrição da atividade secundária"
+                    value={novoCnaeSecundarioDescricao}
+                    onChange={(e) => setNovoCnaeSecundarioDescricao(e.target.value)}
+                    className="w-full min-h-[40px] text-xs px-3 rounded-lg border border-slate-300 focus:border-teal-600 outline-none text-slate-800 bg-white"
+                  />
+                </div>
+                <div className="sm:col-span-2">
                   <button
-                    key={item.codigo}
                     type="button"
-                    onClick={() => handleCnaeSelect(item)}
-                    className={`min-h-[36px] text-[11px] px-2.5 py-1 rounded border text-left transition cursor-pointer flex items-center ${
-                      formData.cnaeCodigo === item.codigo
-                        ? 'bg-emerald-700 text-white border-emerald-700 font-bold'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
+                    onClick={() => handleAdicionarCnaeSecundario()}
+                    disabled={!novoCnaeSecundarioCodigo.trim()}
+                    className="w-full min-h-[40px] px-3 rounded-lg bg-teal-700 hover:bg-teal-600 active:scale-97 text-white font-bold text-xs transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
                   >
-                    <span className="font-mono mr-1">{item.codigo}</span>
-                    <span>{item.descricao.slice(0, 30)}...</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Adicionar</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Atalhos Rápidos para Secundários */}
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-600 pt-1">
+                <span className="font-medium text-slate-500 text-[10px]">Atalhos para secundários:</span>
+                {CNAE_LISTA_COMUM.slice(0, 6).map(item => (
+                  <button
+                    key={`sec-${item.codigo}`}
+                    type="button"
+                    onClick={() => handleAdicionarCnaeSecundario(item.codigo, item.descricao)}
+                    className="px-2 py-0.5 rounded bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 transition cursor-pointer text-[10px] font-mono flex items-center gap-1"
+                  >
+                    <span>+ {item.codigo}</span>
                   </button>
                 ))}
               </div>
+
+              {/* Badges dos CNAEs Secundários Já Adicionados */}
+              <div className="pt-2">
+                {(formData.cnaesSecundarios && formData.cnaesSecundarios.length > 0) ? (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.cnaesSecundarios.map((cnaeSec, idx) => (
+                      <div
+                        key={idx}
+                        className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-900 text-xs shadow-2xs"
+                      >
+                        <span className="font-medium leading-tight">{cnaeSec}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoverCnaeSecundario(idx)}
+                          title="Remover este CNAE secundário"
+                          className="w-5 h-5 rounded-md hover:bg-rose-100 text-teal-700 hover:text-rose-700 flex items-center justify-center transition cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">
+                    Nenhum CNAE secundário vinculado até o momento.
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Código CNAE *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: 47.11-3/02"
-                  value={formData.cnaeCodigo}
-                  onChange={(e) => setFormData({ ...formData, cnaeCodigo: e.target.value })}
-                  className="w-full min-h-[44px] text-xs px-3 rounded-lg border border-slate-300 focus:border-emerald-600 outline-none font-mono text-slate-800"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Descrição CNAE
-                </label>
-                <input
-                  type="text"
-                  placeholder="Descrição da atividade econômica"
-                  value={formData.cnaeDescricao}
-                  onChange={(e) => setFormData({ ...formData, cnaeDescricao: e.target.value })}
-                  className="w-full min-h-[44px] text-xs px-3 rounded-lg border border-slate-300 focus:border-emerald-600 outline-none text-slate-800"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Risco Sanitário e Parecer Arquitetônico */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Grau de Risco Sanitário *

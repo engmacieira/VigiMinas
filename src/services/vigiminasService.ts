@@ -892,8 +892,10 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
       'CNPJ_OU_CPF': '12.345.678/0001-90',
       'RAZAO_SOCIAL': 'DROGARIA E FARMACIA BRAUNAS LTDA',
       'NOME_FANTASIA': 'DROGARIA CENTRAL',
+      'IDENTIFICACAO_MUNICIPAL': 'IM-1044',
       'CNAE_CODIGO': '4771-7/01',
       'CNAE_DESCRICAO': 'Comércio varejista de produtos farmacêuticos, sem manipulação de fórmulas',
+      'CNAES_SECUNDARIOS': '4772-5/00 - Comércio varejista de cosméticos, produtos de perfumaria e de higiene pessoal',
       'NIVEL_RISCO': 'Risco I',
       'LOGRADOURO': 'Av. Brasil',
       'NUMERO': '150',
@@ -918,8 +920,10 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
       'CNPJ_OU_CPF': '98.765.432/0001-11',
       'RAZAO_SOCIAL': 'SUPERMERCADO E PADARIA VALE DO ACO EIRELI',
       'NOME_FANTASIA': 'SUPERMERCADO BOM PRECO',
+      'IDENTIFICACAO_MUNICIPAL': 'IM-2089',
       'CNAE_CODIGO': '4711-3/02',
       'CNAE_DESCRICAO': 'Comércio varejista de mercadorias em geral, com predominância de produtos alimentícios',
+      'CNAES_SECUNDARIOS': '4721-1/03 - Comércio varejista de produtos de padaria e confeitaria; 4722-9/01 - Comércio varejista de carnes - açougues',
       'NIVEL_RISCO': 'Risco II',
       'LOGRADOURO': 'Rua Tiradentes',
       'NUMERO': '42',
@@ -944,8 +948,10 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
       'CNPJ_OU_CPF': '11.222.333/0001-44',
       'RAZAO_SOCIAL': 'LABORATORIO DE ANALISES CLINICAS SANTA RITA LTDA',
       'NOME_FANTASIA': 'LAB SANTA RITA',
+      'IDENTIFICACAO_MUNICIPAL': 'IM-3012',
       'CNAE_CODIGO': '8640-2/02',
       'CNAE_DESCRICAO': 'Laboratórios clínicos e postos de coleta',
+      'CNAES_SECUNDARIOS': '',
       'NIVEL_RISCO': 'Risco III',
       'LOGRADOURO': 'Rua Minas Gerais',
       'NUMERO': '88',
@@ -973,8 +979,10 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
     { 'CAMPO': 'CNPJ_OU_CPF', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': '00.000.000/0000-00 ou 000.000.000-00', 'DESCRICAO': 'Documento federal da empresa ou pessoa física responsável.' },
     { 'CAMPO': 'RAZAO_SOCIAL', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Nome oficial empresarial registrado na Receita / JUCEMG.' },
     { 'CAMPO': 'NOME_FANTASIA', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Nome comercial ou de fachada.' },
-    { 'CAMPO': 'CNAE_CODIGO', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': '0000-0/00', 'DESCRICAO': 'Código CNAE primário sujeito à vigilância sanitária.' },
-    { 'CAMPO': 'CNAE_DESCRICAO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Descrição da atividade econômica.' },
+    { 'CAMPO': 'IDENTIFICACAO_MUNICIPAL', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Letras e Números (Alfanumérico)', 'DESCRICAO': 'Inscrição ou identificação municipal do contribuinte na Prefeitura.' },
+    { 'CAMPO': 'CNAE_CODIGO', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': '0000-0/00', 'DESCRICAO': 'Código CNAE primário/principal sujeito à vigilância sanitária.' },
+    { 'CAMPO': 'CNAE_DESCRICAO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Descrição da atividade econômica principal.' },
+    { 'CAMPO': 'CNAES_SECUNDARIOS', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto (separados por ponto e vírgula ";")', 'DESCRICAO': 'CNAEs e atividades econômicas secundárias do estabelecimento.' },
     { 'CAMPO': 'NIVEL_RISCO', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Risco I, Risco II ou Risco III', 'DESCRICAO': 'Classificação de risco sanitário conforme Resolução SES/MG.' },
     { 'CAMPO': 'LOGRADOURO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Rua, Avenida, Praça, etc.' },
     { 'CAMPO': 'NUMERO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto/Número', 'DESCRICAO': 'Número do imóvel ou S/N.' },
@@ -1004,8 +1012,10 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
     { wch: 22 }, // CNPJ_OU_CPF
     { wch: 38 }, // RAZAO_SOCIAL
     { wch: 28 }, // NOME_FANTASIA
+    { wch: 22 }, // IDENTIFICACAO_MUNICIPAL
     { wch: 14 }, // CNAE_CODIGO
     { wch: 50 }, // CNAE_DESCRICAO
+    { wch: 45 }, // CNAES_SECUNDARIOS
     { wch: 14 }, // NIVEL_RISCO
     { wch: 25 }, // LOGRADOURO
     { wch: 10 }, // NUMERO
@@ -1109,6 +1119,23 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
       normalizedRow['codigocnae'] || ''
     ).trim();
 
+    const identificacaoMunicipal = String(
+      normalizedRow['identificacaomunicipal'] || 
+      normalizedRow['inscricaomunicipal'] || 
+      normalizedRow['idmunicipal'] || 
+      normalizedRow['im'] || ''
+    ).trim();
+
+    const cnaesSecundariosRaw = String(
+      normalizedRow['cnaessecundarios'] || 
+      normalizedRow['cnaesecundario'] || 
+      normalizedRow['cnaessecundarias'] || 
+      normalizedRow['atividadessecundarias'] || ''
+    ).trim();
+    const cnaesSecundarios = cnaesSecundariosRaw
+      ? cnaesSecundariosRaw.split(/[\n;]/).map(c => c.trim()).filter(Boolean)
+      : [];
+
     // Validação de campos obrigatórios
     if (!razaoSocial) {
       erros.push({
@@ -1189,9 +1216,11 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
       id,
       razaoSocial,
       nomeFantasia: String(normalizedRow['nomefantasia'] || normalizedRow['fantasia'] || '').trim() || razaoSocial,
+      identificacaoMunicipal: identificacaoMunicipal || undefined,
       cnpjCpf: cnpjFormatado,
       cnaeCodigo: cnaeCodigo || '4711-3/02',
       cnaeDescricao: String(normalizedRow['cnaedescricao'] || normalizedRow['atividade'] || 'Comércio em geral').trim(),
+      cnaesSecundarios: cnaesSecundarios.length > 0 ? cnaesSecundarios : undefined,
       nivelRisco,
       endereco: {
         logradouro: String(normalizedRow['logradouro'] || normalizedRow['rua'] || normalizedRow['endereco'] || 'Zona Urbana').trim(),
@@ -1340,15 +1369,17 @@ export async function exportarEstabelecimentosFormatados(
   const extensao = formato === 'csv' ? 'csv' : (formato === 'xls' ? 'xls' : 'xlsx');
   const nomeArquivo = `${prefixo}_VISA_Braunas_${dataIsoStr}_${horaStr}.${extensao}`;
 
-  // Estruturação dos dados das 28 colunas padronizadas
+  // Estruturação dos dados das colunas padronizadas
   const dadosFormatados = listaAlvo.map((e, index) => ({
     'Nº': index + 1,
     'ID Sistema': e.id,
     'CNPJ / CPF': e.cnpjCpf ? aplicarMascaraCnpjCpf(e.cnpjCpf) : '-',
     'Razão Social': e.razaoSocial || '-',
     'Nome Fantasia': e.nomeFantasia || '-',
+    'Identificação Municipal': e.identificacaoMunicipal || '-',
     'CNAE Principal': e.cnaeCodigo || '-',
     'Descrição da Atividade': e.cnaeDescricao || '-',
+    'CNAEs Secundários': (e.cnaesSecundarios && e.cnaesSecundarios.length > 0) ? e.cnaesSecundarios.join('; ') : '-',
     'Risco Sanitário': e.nivelRisco || '-',
     'Competência': e.competenciaFiscalizacao || 'Municipal',
     'Parecer Arquitetônico': e.parecerProjetoArquitetonico || 'Não Aplicável',
@@ -1377,7 +1408,7 @@ export async function exportarEstabelecimentosFormatados(
     // Geração de CSV com UTF-8 BOM e delimitador selecionado (; ou ,)
     const cabecalhos = dadosFormatados.length > 0 
       ? Object.keys(dadosFormatados[0]) 
-      : ['Nº', 'ID Sistema', 'CNPJ / CPF', 'Razão Social', 'Nome Fantasia', 'CNAE Principal', 'Descrição da Atividade', 'Risco Sanitário', 'Competência', 'Parecer Arquitetônico', 'Situação Cadastral', 'Motivo Baixa', 'Logradouro', 'Número', 'Bairro', 'CEP', 'Município', 'UF', 'Telefone', 'E-mail', 'Situação do Alvará', 'Número do Alvará', 'Validade do Alvará', 'Data Início Última Inspeção', 'Data Fim Última Inspeção', 'Inspecionado no Ano Vigente', 'Próxima Inspeção Prevista', 'Fiscais Responsáveis', 'Data de Cadastro'];
+      : ['Nº', 'ID Sistema', 'CNPJ / CPF', 'Razão Social', 'Nome Fantasia', 'Identificação Municipal', 'CNAE Principal', 'Descrição da Atividade', 'CNAEs Secundários', 'Risco Sanitário', 'Competência', 'Parecer Arquitetônico', 'Situação Cadastral', 'Motivo Baixa', 'Logradouro', 'Número', 'Bairro', 'CEP', 'Município', 'UF', 'Telefone', 'E-mail', 'Situação do Alvará', 'Número do Alvará', 'Validade do Alvará', 'Data Início Última Inspeção', 'Data Fim Última Inspeção', 'Inspecionado no Ano Vigente', 'Próxima Inspeção Prevista', 'Fiscais Responsáveis', 'Data de Cadastro'];
     
     // Função para escapar valores CSV de acordo com RFC 4180
     const escaparCsv = (valor: any): string => {
@@ -1421,8 +1452,10 @@ export async function exportarEstabelecimentosFormatados(
       { wch: 20 }, // CNPJ/CPF
       { wch: 38 }, // Razão Social
       { wch: 30 }, // Nome Fantasia
-      { wch: 14 }, // CNAE
+      { wch: 22 }, // Identificação Municipal
+      { wch: 14 }, // CNAE Principal
       { wch: 45 }, // CNAE Descrição
+      { wch: 45 }, // CNAEs Secundários
       { wch: 15 }, // Risco Sanitário
       { wch: 15 }, // Competência
       { wch: 18 }, // Parecer
