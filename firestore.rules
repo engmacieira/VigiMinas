@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regra padrão de negação
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Coleção de Estabelecimentos (Indicadores 12, 13, 14, 15)
+    match /estabelecimentos/{estabelecimentoId} {
+      allow read: if true;
+      allow create, update: if isValidId(estabelecimentoId) &&
+        request.resource.data.razaoSocial is string &&
+        request.resource.data.razaoSocial.size() > 0 &&
+        request.resource.data.nivelRisco in ['Risco I', 'Risco II', 'Risco III'];
+      allow delete: if isValidId(estabelecimentoId);
+    }
+
+    // Coleção de Inspeções VAPT (Indicador 11 - Saúde do Trabalhador)
+    match /inspecoes_vapt/{inspecaoId} {
+      allow read: if true;
+      allow create, update: if isValidId(inspecaoId) &&
+        request.resource.data.estabelecimentoId is string &&
+        request.resource.data.nomeLocalTrabalho is string;
+      allow delete: if isValidId(inspecaoId);
+    }
+
+    // Coleção de Logs de Auditoria e Transparência Fiscalizatória (Middleware)
+    match /logs_auditoria/{logId} {
+      allow read: if true;
+      allow create: if isValidId(logId) &&
+        request.resource.data.recursoId is string &&
+        request.resource.data.operacao is string &&
+        request.resource.data.colecao is string;
+      allow update: if false; // Logs são estritamente imutáveis
+      allow delete: if isValidId(logId); // Permite expurgo administrativo completo
+    }
+
+    // Coleção de Configurações Gerais do Sistema e Secretaria
+    match /configuracoes_sistema/{configId} {
+      allow read: if true;
+      allow create, update: if isValidId(configId) &&
+        request.resource.data.secretaria is map &&
+        request.resource.data.exercicioAtivo is map;
+      allow delete: if false; // Configurações gerais não devem ser deletadas
+    }
+  }
+}

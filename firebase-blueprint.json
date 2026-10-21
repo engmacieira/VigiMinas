@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "Estabelecimento": {
+      "title": "Estabelecimento",
+      "description": "Estabelecimento sujeito à vigilância sanitária municipal em Braúnas/MG",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cnpjCpf": { "type": "string", "maxLength": 20 },
+        "razaoSocial": { "type": "string", "maxLength": 200 },
+        "nomeFantasia": { "type": "string", "maxLength": 200 },
+        "cnaeCodigo": { "type": "string", "maxLength": 20 },
+        "cnaeDescricao": { "type": "string", "maxLength": 250 },
+        "nivelRisco": { "type": "string", "enum": ["Risco I", "Risco II", "Risco III"] },
+        "situacaoEstabelecimento": { "type": "string", "enum": ["Ativo", "Inativo"] },
+        "situacaoAlvara": { "type": "string", "enum": ["Válido", "Vencido", "Isento/Dispensado"] },
+        "numeroAlvara": { "type": "string", "maxLength": 50 },
+        "dataValidadeAlvara": { "type": "string", "maxLength": 10 },
+        "dataUltimaInspecaoInicio": { "type": "string", "maxLength": 10 },
+        "dataUltimaInspecaoFim": { "type": "string", "maxLength": 10 },
+        "dataProximaInspecao": { "type": "string", "maxLength": 10 },
+        "competenciaFiscalizacao": { "type": "string", "enum": ["Municipal", "Estadual", "Pactuado"] },
+        "parecerProjetoArquitetonico": { "type": "string", "enum": ["Sim", "Não", "Não Aplicável"] },
+        "observacoesBaixa": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "cnpjCpf", "razaoSocial", "nivelRisco", "situacaoEstabelecimento", "situacaoAlvara", "competenciaFiscalizacao"]
+    },
+    "InspecaoVapt": {
+      "title": "InspecaoVapt",
+      "description": "Vistoria e Inspeção em Ambientes e Processos de Trabalho (VAPT) da Saúde do Trabalhador",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "estabelecimentoId": { "type": "string", "maxLength": 128 },
+        "nomeLocalTrabalho": { "type": "string", "maxLength": 200 },
+        "dataInspecao": { "type": "string", "maxLength": 10 },
+        "numeroRelatorioTermo": { "type": "string", "maxLength": 50 },
+        "principaisRiscosIdentificados": { "type": "string", "maxLength": 1500 },
+        "recomendacoesOrientacoes": { "type": "string", "maxLength": 1500 },
+        "statusInspecao": { "type": "string", "enum": ["Concluída", "Em Acompanhamento"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "estabelecimentoId", "nomeLocalTrabalho", "dataInspecao", "numeroRelatorioTermo", "statusInspecao"]
+    },
+    "LogAuditoria": {
+      "title": "LogAuditoria",
+      "description": "Log de auditoria e transparência fiscalizatória capturado pelo middleware de persistência",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "operacao": { "type": "string", "enum": ["create", "update", "delete"] },
+        "colecao": { "type": "string", "enum": ["estabelecimentos", "inspecoes_vapt"] },
+        "recursoId": { "type": "string", "maxLength": 128 },
+        "registroId": { "type": "string", "maxLength": 128 },
+        "usuario": { "type": "string", "maxLength": 150 },
+        "fiscalResponsavel": { "type": "string", "maxLength": 150 },
+        "identificadorEntidade": { "type": "string", "maxLength": 250 },
+        "detalhes": { "type": "string", "maxLength": 1000 },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "tipoRegistro": { "type": "string", "maxLength": 50 },
+        "acao": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "operacao", "colecao", "recursoId", "timestamp"]
+    },
+    "ConfiguracaoSistema": {
+      "title": "ConfiguracaoSistema",
+      "description": "Configurações gerais do sistema, cadastro de fiscais sanitários, metas e dados da secretaria",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "secretaria": { "type": "object" },
+        "exercicioAtivo": { "type": "object" },
+        "exerciciosHistorico": { "type": "array" },
+        "fiscais": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "secretaria", "exercicioAtivo", "fiscais"]
+    }
+  },
+  "firestore": {
+    "/estabelecimentos/{estabelecimentoId}": {
+      "schema": "Estabelecimento",
+      "description": "Coleção de estabelecimentos cadastrados para apuração dos Indicadores 12, 13, 14 e 15 do VigiMinas."
+    },
+    "/inspecoes_vapt/{inspecaoId}": {
+      "schema": "InspecaoVapt",
+      "description": "Coleção de inspeções em ambientes de trabalho (VAPT) para o Indicador 11 da Saúde do Trabalhador."
+    },
+    "/logs_auditoria/{logId}": {
+      "schema": "LogAuditoria",
+      "description": "Histórico imutável de logs de auditoria capturados pelo middleware do Firestore."
+    },
+    "/configuracoes_sistema/{configId}": {
+      "schema": "ConfiguracaoSistema",
+      "description": "Configurações institucionais da Secretaria de Saúde, corpo de fiscais e parâmetros de metas do VigiMinas."
+    }
+  }
+}

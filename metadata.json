@@ -1,0 +1,6 @@
+{
+  "name": "VigiMinas Braúnas - VISA e Saúde do Trabalhador",
+  "description": "Sistema de Gestão da Vigilância Sanitária Municipal e Saúde do Trabalhador de Braúnas/MG com apuração oficial dos Indicadores 11 a 15 do Programa VigiMinas (SES/MG).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
