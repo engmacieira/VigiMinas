@@ -411,6 +411,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                     errors.logradouro ? 'border-rose-500' : 'border-slate-300'
                   } outline-none text-slate-800`}
                 />
+                {errors.logradouro && <p className="text-[11px] text-rose-600 mt-1">{errors.logradouro}</p>}
               </div>
 
               <div>
