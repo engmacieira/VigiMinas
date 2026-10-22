@@ -47,7 +47,7 @@ export const ExportarEstabelecimentosModal: React.FC<ExportarEstabelecimentosMod
 
   // Cálculos dinâmicos dos escopos
   const totalGeral = estabelecimentos.length;
-  const totalAtivos = estabelecimentos.filter(e => e.situacaoEstabelecimento === 'Ativo').length;
+  const totalAtivos = estabelecimentos.filter(e => e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso').length;
   const totalBaixados = estabelecimentos.filter(e => e.situacaoEstabelecimento === 'Inativo').length;
   const totalFiltrados = estabelecimentosFiltrados.length;
 

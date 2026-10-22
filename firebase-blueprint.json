@@ -14,7 +14,7 @@
         "cnaeDescricao": { "type": "string", "maxLength": 250, "description": "Descrição da atividade principal" },
         "cnaesSecundarios": { "type": "array", "description": "Lista de CNAEs secundários vinculados", "items": { "type": "string" } },
         "nivelRisco": { "type": "string", "enum": ["Risco I", "Risco II", "Risco III"] },
-        "situacaoEstabelecimento": { "type": "string", "enum": ["Ativo", "Inativo"] },
+        "situacaoEstabelecimento": { "type": "string", "enum": ["Ativo", "Inativo", "Suspenso"] },
         "situacaoAlvara": { "type": "string", "enum": ["Válido", "Vencido", "Isento/Dispensado", "Não Possui (Irregular)"] },
         "numeroAlvara": { "type": "string", "maxLength": 50 },
         "dataValidadeAlvara": { "type": "string", "maxLength": 10 },

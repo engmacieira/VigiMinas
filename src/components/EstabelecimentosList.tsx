@@ -326,7 +326,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                 className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
               >
                 <option value="todos">Todos os Status</option>
-                <option value="Ativo">Apenas Ativos</option>
+                <option value="Ativo">Ativos (Regulares)</option>
+                <option value="Suspenso">Suspensos (Interditados)</option>
                 <option value="Inativo">Inativos (Baixados)</option>
               </select>
 
@@ -589,6 +590,18 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                             Ativo
                           </span>
+                        ) : est.situacaoEstabelecimento === 'Suspenso' ? (
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-950 border border-amber-300">
+                              <AlertTriangle className="w-3 h-3 text-amber-700" />
+                              Suspenso (Interditado)
+                            </span>
+                            {est.observacoesBaixa && (
+                              <p className="text-[10px] text-amber-800 italic max-w-[170px] line-clamp-2" title={est.observacoesBaixa}>
+                                {est.observacoesBaixa}
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <div className="space-y-0.5">
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-800 border border-slate-300">
@@ -793,6 +806,16 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                     )}
                   </div>
                 </div>
+
+                {est.situacaoEstabelecimento === 'Suspenso' && (
+                  <div className="p-2 rounded bg-amber-50 text-[11px] text-amber-900 border border-amber-200">
+                    <span className="font-bold flex items-center gap-1 text-amber-950 mb-0.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
+                      Interdição / Suspensão Sanitária:
+                    </span>
+                    {est.observacoesBaixa || 'Estabelecimento com atividades suspensas temporariamente pela VISA.'}
+                  </div>
+                )}
 
                 {est.situacaoEstabelecimento === 'Inativo' && est.observacoesBaixa && (
                   <div className="p-2 rounded bg-slate-50 text-[11px] text-slate-600 border border-slate-200 italic">

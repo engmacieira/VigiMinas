@@ -36,15 +36,15 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
   const anoStr = String(configuracao.exercicioAtivo.anoExercicio || indicadores.anoReferencia);
   const { metaInd11Vapt, metaInd13RiscoI, metaInd14RiscoII, metaInd15RiscoIII } = configuracao.exercicioAtivo;
 
-  // Estabelecimentos que exigem ação prioritária para fechar metas do exercício ativo
+  // Estabelecimentos que exigem ação prioritária para fechar metas do exercício ativo (inclui Suspensos)
   const pendentesRiscoIII = estabelecimentos.filter(e => 
-    e.situacaoEstabelecimento === 'Ativo' && 
+    (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') && 
     e.nivelRisco === 'Risco III' &&
     (!e.dataUltimaInspecaoInicio || !e.dataUltimaInspecaoInicio.startsWith(anoStr))
   );
 
   const pendentesRiscoII = estabelecimentos.filter(e => 
-    e.situacaoEstabelecimento === 'Ativo' && 
+    (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') && 
     e.nivelRisco === 'Risco II' &&
     (!e.dataUltimaInspecaoInicio || !e.dataUltimaInspecaoInicio.startsWith(anoStr))
   );

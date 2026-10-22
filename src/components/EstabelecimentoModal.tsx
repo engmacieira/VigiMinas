@@ -731,26 +731,32 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="situacaoEstabelecimento" className="block text-xs font-semibold text-slate-700 mb-1">
                   Situação Cadastral *
                 </label>
                 <select
+                  id="situacaoEstabelecimento"
                   value={formData.situacaoEstabelecimento}
                   onChange={(e) => {
                     const novoStatus = e.target.value as SituacaoEstabelecimento;
                     setFormData(prev => ({
                       ...prev,
                       situacaoEstabelecimento: novoStatus,
-                      observacoesBaixa: novoStatus === 'Inativo' && !prev.observacoesBaixa ? 'Baixado em ' : prev.observacoesBaixa
+                      observacoesBaixa: novoStatus === 'Inativo' && !prev.observacoesBaixa ? 'Baixado em ' :
+                                        novoStatus === 'Suspenso' && !prev.observacoesBaixa ? 'Suspenso/Interditado em ' :
+                                        prev.observacoesBaixa
                     }));
                   }}
                   className={`w-full min-h-[44px] text-xs px-3 rounded-lg border outline-none font-bold ${
                     formData.situacaoEstabelecimento === 'Ativo'
                       ? 'border-emerald-300 bg-emerald-50/50 text-emerald-900'
+                      : formData.situacaoEstabelecimento === 'Suspenso'
+                      ? 'border-amber-400 bg-amber-50 text-amber-950'
                       : 'border-slate-400 bg-slate-100 text-slate-900'
                   }`}
                 >
                   <option value="Ativo">Ativo (Em funcionamento regular)</option>
+                  <option value="Suspenso">Suspenso (Interditado / Suspensão Sanitária)</option>
                   <option value="Inativo">Inativo (Encerrado / Baixado)</option>
                 </select>
               </div>
@@ -780,6 +786,33 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Alerta de Estabelecimento Suspenso / Interditado */}
+            {formData.situacaoEstabelecimento === 'Suspenso' && (
+              <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-300 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-700" />
+                    Interdição / Suspensão Sanitária (Contabilizado na Base Ativa)
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-900 leading-relaxed">
+                  O estabelecimento está suspenso ou interditado cautelarmente pela Vigilância Sanitária. Conforme as diretrizes, ele <strong>continua na contagem dos ativos</strong> para metas de fiscalização e monitoramento sanitário.
+                </p>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Motivo / Auto de Infração / Termo de Interdição (Opcional):
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Ex: Suspenso/Interditado cautelarmente conforme Auto de Infração nº 08/2026 por inconformidades físico-sanitárias graves."
+                    value={formData.observacoesBaixa}
+                    onChange={(e) => setFormData({ ...formData, observacoesBaixa: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-amber-300 bg-white outline-none text-slate-800"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Regra VigiMinas para Baixa de Estabelecimento */}
             {formData.situacaoEstabelecimento === 'Inativo' && (

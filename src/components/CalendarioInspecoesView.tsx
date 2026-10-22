@@ -175,7 +175,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
         const hojeStr = new Date().toISOString().split('T')[0];
         const semDataFutura = !est.dataProximaInspecao || est.dataProximaInspecao < hojeStr;
 
-        return est.situacaoEstabelecimento === 'Ativo' && semDataFutura && matchBusca && matchRisco;
+        return (est.situacaoEstabelecimento === 'Ativo' || est.situacaoEstabelecimento === 'Suspenso') && semDataFutura && matchBusca && matchRisco;
       })
       .sort((a, b) => {
         // Prioriza Risco III primeiro, depois Risco II, depois Risco I

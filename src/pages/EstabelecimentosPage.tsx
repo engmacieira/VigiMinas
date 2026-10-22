@@ -40,9 +40,9 @@ export const EstabelecimentosPage: React.FC = () => {
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [estParaExcluir, setEstParaExcluir] = useState<{ id: string; razao: string; cnpj: string } | null>(null);
 
-  // Total de estabelecimentos ativos aguardando agendamento
+  // Total de estabelecimentos ativos aguardando agendamento (inclui Suspensos)
   const totalPendentesAgendamento = estabelecimentos.filter(
-    e => !e.isDeleted && e.situacaoEstabelecimento === 'Ativo' && (!e.dataProximaInspecao || e.dataProximaInspecao < new Date().toISOString().split('T')[0])
+    e => !e.isDeleted && (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') && (!e.dataProximaInspecao || e.dataProximaInspecao < new Date().toISOString().split('T')[0])
   ).length;
 
   const handleNovo = () => {

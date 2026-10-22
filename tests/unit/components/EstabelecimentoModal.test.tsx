@@ -188,4 +188,23 @@ describe('EstabelecimentoModal - Unit Tests', () => {
     // Verifica que o texto de atenção para empresa irregular é exibido
     expect(screen.getByText(/A empresa deveria possuir alvará sanitário mas opera sem a devida licença/i)).toBeInTheDocument();
   });
+
+  it('permite selecionar a situacao cadastral "Suspenso" e exibe aviso de interdição sanitaria', () => {
+    render(
+      <EstabelecimentoModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        estabelecimentoParaEditar={estMock}
+      />
+    );
+
+    // Localiza o select de Situação Cadastral
+    const statusSelect = screen.getByLabelText(/Situação Cadastral \*/i);
+    fireEvent.change(statusSelect, { target: { value: 'Suspenso' } });
+
+    // Verifica que o aviso de suspensão/interdição e que continua na base ativa é exibido
+    expect(screen.getByText(/Interdição \/ Suspensão Sanitária \(Contabilizado na Base Ativa\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/continua na contagem dos ativos/i)).toBeInTheDocument();
+  });
 });

@@ -223,6 +223,38 @@ describe('vigiminasService - Unit Tests', () => {
       expect(ind.ind11TotalInspecoesAno).toBe(2);
       expect(ind.ind11MetaAtingida).toBe(true);
     });
+
+    it('inclui estabelecimentos com situacao Suspenso na contagem dos ativos e calculo de metas', () => {
+      const mockComSuspenso: Estabelecimento[] = [
+        ...estabelecimentosMock,
+        {
+          id: 'est-suspenso',
+          razaoSocial: 'Padaria Interditada Cautelarmente',
+          nomeFantasia: 'Padaria Interditada',
+          cnpjCpf: '55.555.555/0001-55',
+          nivelRisco: 'Risco I',
+          situacaoEstabelecimento: 'Suspenso',
+          dataUltimaInspecaoInicio: '',
+          dataUltimaInspecaoFim: '',
+          dataProximaInspecao: '',
+          dataValidadeAlvara: '',
+          numeroAlvara: '',
+          observacoesBaixa: 'Interditado cautelarmente',
+          competenciaFiscalizacao: 'Municipal',
+          parecerProjetoArquitetonico: 'Não Aplicável',
+          cnaeCodigo: '1091-1/01',
+          cnaeDescricao: 'Padaria',
+          endereco: { logradouro: 'Rua X', numero: '1', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
+          contato: { telefone: '3332950000', email: 'x@test.com' },
+          situacaoAlvara: 'Não Possui (Irregular)'
+        }
+      ];
+
+      const ind = calcularIndicadores(mockComSuspenso, vaptMock, 2026);
+      expect(ind.ind12TotalCadastrados).toBe(5);
+      expect(ind.ind12Ativos).toBe(4);
+      expect(ind.ind13TotalRiscoI).toBe(2);
+    });
   });
 
   describe('Cálculo de Alertas VAPT', () => {
@@ -319,6 +351,27 @@ describe('vigiminasService - Unit Tests', () => {
       const res = parsearPlanilhaEstabelecimentos(buffer);
       expect(res.validos.length).toBe(1);
       expect(res.validos[0].situacaoAlvara).toBe('Não Possui (Irregular)');
+    });
+
+    it('normaliza situacao cadastral Suspenso a partir de planilha', () => {
+      const rawRows = [
+        {
+          'CNPJ_OU_CPF': '88.777.666/0001-55',
+          'RAZAO_SOCIAL': 'Empresa Interditada Pela VISA',
+          'CNAE_CODIGO': '4711-3/02',
+          'NIVEL_RISCO': 'Risco II',
+          'SITUACAO_ESTABELECIMENTO': 'Suspenso'
+        }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rawRows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Test');
+      const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+      const res = parsearPlanilhaEstabelecimentos(buffer);
+      expect(res.validos.length).toBe(1);
+      expect(res.validos[0].situacaoEstabelecimento).toBe('Suspenso');
     });
 
     it('registra erros em linhas sem Razão Social ou documento', () => {

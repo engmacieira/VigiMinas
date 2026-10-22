@@ -21,7 +21,8 @@ import {
   ResultadoExportacao,
   AlertasInspecoesVapt,
   AlertaInspecaoVaptInfo,
-  SituacaoAlvara
+  SituacaoAlvara,
+  SituacaoEstabelecimento
 } from '../types/vigiminas';
 import {
   createWithAudit,
@@ -590,11 +591,11 @@ export function calcularIndicadores(
 
   // Indicador 12: Total de estabelecimentos cadastrados
   const ind12TotalCadastrados = estValidos.length;
-  const ind12Ativos = estValidos.filter(e => e.situacaoEstabelecimento === 'Ativo').length;
+  const ind12Ativos = estValidos.filter(e => e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso').length;
   const ind12Inativos = estValidos.filter(e => e.situacaoEstabelecimento === 'Inativo').length;
 
-  // Estabelecimentos Ativos para os indicadores de risco
-  const estabelecimentosAtivos = estValidos.filter(e => e.situacaoEstabelecimento === 'Ativo');
+  // Estabelecimentos Ativos para os indicadores de risco (inclui Suspensos conforme diretriz do VigiMinas)
+  const estabelecimentosAtivos = estValidos.filter(e => e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso');
 
   // Indicador 13: Risco I (Meta padrão >= 15% inspecionados no ano)
   const riscoI = estabelecimentosAtivos.filter(e => e.nivelRisco === 'Risco I');
@@ -687,7 +688,7 @@ export function exportarPlanilhaVigiMinas(
     'Competência de Fiscalização': e.competenciaFiscalizacao,
     'Parecer Projeto Arquitetônico': e.parecerProjetoArquitetonico,
     'Situação Cadastral': e.situacaoEstabelecimento,
-    'Observações / Justificativa da Baixa': e.observacoesBaixa || (e.situacaoEstabelecimento === 'Inativo' ? 'Inativo sem justificativa' : 'Ativo regular'),
+    'Observações / Justificativa da Baixa / Suspensão': e.observacoesBaixa || (e.situacaoEstabelecimento === 'Inativo' ? 'Inativo sem justificativa' : e.situacaoEstabelecimento === 'Suspenso' ? 'Suspenso/Interditado pela VISA' : 'Ativo regular'),
     'Situação do Alvará Sanitário': e.situacaoAlvara,
     'Número do Alvará / Dispensa': e.numeroAlvara || '-',
     'Data Validade do Alvará': e.dataValidadeAlvara ? formatarDataBr(e.dataValidadeAlvara) : '-',
@@ -992,7 +993,7 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
     { 'CAMPO': 'MUNICIPIO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Braúnas/MG', 'DESCRICAO': 'Município de competência sanitária.' },
     { 'CAMPO': 'TELEFONE', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': '(33) 0000-0000', 'DESCRICAO': 'Telefone fixo ou WhatsApp comercial.' },
     { 'CAMPO': 'EMAIL', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'nome@dominio.com', 'DESCRICAO': 'E-mail para notificações e termos sanitários.' },
-    { 'CAMPO': 'SITUACAO_ESTABELECIMENTO', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Ativo ou Inativo', 'DESCRICAO': 'Situação cadastral na VISA.' },
+    { 'CAMPO': 'SITUACAO_ESTABELECIMENTO', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Ativo, Suspenso ou Inativo', 'DESCRICAO': 'Situação cadastral na VISA (Suspenso conta na base ativa).' },
     { 'CAMPO': 'SITUACAO_ALVARA', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Válido, Vencido, Isento/Dispensado ou Não Possui (Irregular)', 'DESCRICAO': 'Status da licença/alvará sanitário.' },
     { 'CAMPO': 'NUMERO_ALVARA', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Número do alvará sanitário municipal.' },
     { 'CAMPO': 'VALIDADE_ALVARA', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'DD/MM/AAAA ou AAAA-MM-DD', 'DESCRICAO': 'Data de expiração da licença.' },
@@ -1169,7 +1170,12 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
 
     // Normalização da Situação Cadastral
     const sitRaw = String(normalizedRow['situacaoestabelecimento'] || normalizedRow['situacao'] || normalizedRow['status'] || '').toUpperCase();
-    const situacaoEstabelecimento = sitRaw.includes('INATIV') ? 'Inativo' : 'Ativo';
+    let situacaoEstabelecimento: SituacaoEstabelecimento = 'Ativo';
+    if (sitRaw.includes('SUSPENS') || sitRaw.includes('INTERDIT')) {
+      situacaoEstabelecimento = 'Suspenso';
+    } else if (sitRaw.includes('INATIV') || sitRaw.includes('BAIXAD') || sitRaw.includes('ENCERR')) {
+      situacaoEstabelecimento = 'Inativo';
+    }
 
     // Normalização da Situação do Alvará
     const alvRaw = String(normalizedRow['situacaoalvara'] || normalizedRow['alvara'] || '').toUpperCase();
@@ -1341,8 +1347,8 @@ export async function exportarEstabelecimentosFormatados(
 
   switch (escopo) {
     case 'ativos':
-      listaAlvo = todosEstabelecimentos.filter(e => e.situacaoEstabelecimento === 'Ativo');
-      escopoDescricao = 'Apenas Estabelecimentos Ativos';
+      listaAlvo = todosEstabelecimentos.filter(e => e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso');
+      escopoDescricao = 'Apenas Estabelecimentos Ativos (inclui Suspensos)';
       break;
     case 'baixados':
       listaAlvo = todosEstabelecimentos.filter(e => e.situacaoEstabelecimento === 'Inativo');
@@ -1494,7 +1500,8 @@ export async function exportarEstabelecimentosFormatados(
         { 'Parâmetro de Auditoria': 'Escopo Selecionado', 'Informação': escopoDescricao },
         { 'Parâmetro de Auditoria': 'Formato Gerado', 'Informação': formato.toUpperCase() },
         { 'Parâmetro de Auditoria': 'Total de Estabelecimentos Exportados', 'Informação': `${listaAlvo.length} registros` },
-        { 'Parâmetro de Auditoria': 'Total Ativos', 'Informação': `${listaAlvo.filter(e => e.situacaoEstabelecimento === 'Ativo').length}` },
+        { 'Parâmetro de Auditoria': 'Total Ativos (inclui Suspensos)', 'Informação': `${listaAlvo.filter(e => e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso').length}` },
+        { 'Parâmetro de Auditoria': 'Total Suspensos/Interditados', 'Informação': `${listaAlvo.filter(e => e.situacaoEstabelecimento === 'Suspenso').length}` },
         { 'Parâmetro de Auditoria': 'Total Baixados', 'Informação': `${listaAlvo.filter(e => e.situacaoEstabelecimento === 'Inativo').length}` },
         { 'Parâmetro de Auditoria': 'Risco I (Baixo Risco)', 'Informação': `${listaAlvo.filter(e => e.nivelRisco === 'Risco I').length}` },
         { 'Parâmetro de Auditoria': 'Risco II (Médio Risco)', 'Informação': `${listaAlvo.filter(e => e.nivelRisco === 'Risco II').length}` },
