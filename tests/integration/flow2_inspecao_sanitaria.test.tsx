@@ -111,7 +111,7 @@ describe('Fluxo 2 (Integração): Inspeção Sanitária e Atualização do Calen
         dataProximaInspecao: '2026-04-15',
         cnaeCodigo: '4771-7/01',
         cnaeDescricao: 'Drogaria',
-        endereco: { logradouro: 'Av. Principal', numero: '200', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+        endereco: { logradouro: 'Av. Principal', numero: '200', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
         contato: { telefone: '3332952000', email: 'vapt@drogaria.com' }
       }
     ];

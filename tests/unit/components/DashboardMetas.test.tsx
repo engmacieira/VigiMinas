@@ -60,7 +60,7 @@ describe('DashboardMetas - Unit Tests', () => {
       parecerProjetoArquitetonico: 'Sim',
       cnaeCodigo: '8610-1/01',
       cnaeDescricao: 'Atendimento hospitalar',
-      endereco: { logradouro: 'Rua H', numero: '1', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+      endereco: { logradouro: 'Rua H', numero: '1', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
       contato: { telefone: '3332950000', email: 'hosp@test.com' },
       situacaoAlvara: 'Válido'
     }

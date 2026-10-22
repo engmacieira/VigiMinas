@@ -137,7 +137,7 @@ describe('Fluxo 1 (Integração): Ciclo de Vida do Estabelecimento', () => {
       observacoesBaixa: '',
       competenciaFiscalizacao: 'Municipal',
       parecerProjetoArquitetonico: 'Sim',
-      endereco: { logradouro: 'Rua Principal', numero: '10', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+      endereco: { logradouro: 'Rua Principal', numero: '10', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
       contato: { telefone: '3332951000', email: 'padaria@braunas.mg.gov.br' }
     };
 

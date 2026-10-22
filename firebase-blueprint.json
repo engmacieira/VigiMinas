@@ -15,7 +15,7 @@
         "cnaesSecundarios": { "type": "array", "description": "Lista de CNAEs secundários vinculados", "items": { "type": "string" } },
         "nivelRisco": { "type": "string", "enum": ["Risco I", "Risco II", "Risco III"] },
         "situacaoEstabelecimento": { "type": "string", "enum": ["Ativo", "Inativo"] },
-        "situacaoAlvara": { "type": "string", "enum": ["Válido", "Vencido", "Isento/Dispensado"] },
+        "situacaoAlvara": { "type": "string", "enum": ["Válido", "Vencido", "Isento/Dispensado", "Não Possui (Irregular)"] },
         "numeroAlvara": { "type": "string", "maxLength": 50 },
         "dataValidadeAlvara": { "type": "string", "maxLength": 10 },
         "dataUltimaInspecaoInicio": { "type": "string", "maxLength": 10 },

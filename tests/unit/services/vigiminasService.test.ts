@@ -71,7 +71,7 @@ describe('vigiminasService - Unit Tests', () => {
     });
 
     it('aplicarMascaraCep formata CEP com 8 dígitos', () => {
-      expect(aplicarMascaraCep('35169000')).toBe('35169-000');
+      expect(aplicarMascaraCep('35189000')).toBe('35189-000');
     });
 
     it('aplicarMascaraTelefone formata telefone de 10 e 11 dígitos', () => {
@@ -99,7 +99,7 @@ describe('vigiminasService - Unit Tests', () => {
         parecerProjetoArquitetonico: 'Sim',
         cnaeCodigo: '1091-1/01',
         cnaeDescricao: 'Fabricação de produtos de padaria',
-        endereco: { logradouro: 'Rua A', numero: '1', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+        endereco: { logradouro: 'Rua A', numero: '1', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
         contato: { telefone: '3332950000', email: 'alfa@test.com' },
         situacaoAlvara: 'Válido'
       },
@@ -120,7 +120,7 @@ describe('vigiminasService - Unit Tests', () => {
         parecerProjetoArquitetonico: 'Sim',
         cnaeCodigo: '4771-7/01',
         cnaeDescricao: 'Drogaria',
-        endereco: { logradouro: 'Rua B', numero: '2', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+        endereco: { logradouro: 'Rua B', numero: '2', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
         contato: { telefone: '3332950000', email: 'beta@test.com' },
         situacaoAlvara: 'Válido'
       },
@@ -141,7 +141,7 @@ describe('vigiminasService - Unit Tests', () => {
         parecerProjetoArquitetonico: 'Sim',
         cnaeCodigo: '8630-5/04',
         cnaeDescricao: 'Atividade odontológica',
-        endereco: { logradouro: 'Rua C', numero: '3', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+        endereco: { logradouro: 'Rua C', numero: '3', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
         contato: { telefone: '3332950000', email: 'gama@test.com' },
         situacaoAlvara: 'Válido'
       },
@@ -162,7 +162,7 @@ describe('vigiminasService - Unit Tests', () => {
         parecerProjetoArquitetonico: 'Não Aplicável',
         cnaeCodigo: '4711-3/02',
         cnaeDescricao: 'Mercado',
-        endereco: { logradouro: 'Rua D', numero: '4', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+        endereco: { logradouro: 'Rua D', numero: '4', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
         contato: { telefone: '3332950000', email: 'delta@test.com' },
         situacaoAlvara: 'Vencido'
       }
@@ -300,6 +300,27 @@ describe('vigiminasService - Unit Tests', () => {
       expect(res.validos[0].cnpjCpf).toBe('12.345.678/0001-90');
     });
 
+    it('normaliza situacao do alvara Não Possui (Irregular) a partir de planilha', () => {
+      const rawRows = [
+        {
+          'CNPJ_OU_CPF': '99.888.777/0001-66',
+          'RAZAO_SOCIAL': 'Oficina Irregular Sem Alvará',
+          'CNAE_CODIGO': '4520-0/01',
+          'NIVEL_RISCO': 'Risco II',
+          'SITUACAO_ALVARA': 'Não Possui (Irregular)'
+        }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rawRows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Test');
+      const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+      const res = parsearPlanilhaEstabelecimentos(buffer);
+      expect(res.validos.length).toBe(1);
+      expect(res.validos[0].situacaoAlvara).toBe('Não Possui (Irregular)');
+    });
+
     it('registra erros em linhas sem Razão Social ou documento', () => {
       const rawRows = [
         {
@@ -341,7 +362,7 @@ describe('vigiminasService - Unit Tests', () => {
           parecerProjetoArquitetonico: 'Sim',
           cnaeCodigo: '1091-1/01',
           cnaeDescricao: 'Padaria',
-          endereco: { logradouro: 'Rua A', numero: '1', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+          endereco: { logradouro: 'Rua A', numero: '1', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
           contato: { telefone: '3332950000', email: 'alfa@test.com' },
           situacaoAlvara: 'Válido'
         }

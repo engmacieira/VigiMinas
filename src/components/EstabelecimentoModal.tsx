@@ -58,17 +58,17 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
       logradouro: '',
       numero: '',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
       telefone: '',
       email: ''
     },
-    cnaeCodigo: '',
-    cnaeDescricao: '',
+    cnaeCodigo: '47.12-01/00',
+    cnaeDescricao: 'Comércio varejista de mercadorias em geral (Minimercados, mercearias e armazéns)',
     cnaesSecundarios: [],
-    nivelRisco: 'Risco II',
+    nivelRisco: 'Risco I',
     dataUltimaInspecaoInicio: '',
     dataUltimaInspecaoFim: '',
     dataProximaInspecao: '',
@@ -78,7 +78,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
     numeroAlvara: '',
     observacoesBaixa: '',
     competenciaFiscalizacao: 'Municipal',
-    parecerProjetoArquitetonico: 'Sim',
+    parecerProjetoArquitetonico: 'Não Aplicável',
     fiscaisUltimaInspecao: [FISCAIS_MUNICIPIO[0]]
   });
 
@@ -106,17 +106,17 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
           logradouro: '',
           numero: '',
           bairro: 'Centro',
-          cep: '35169-000',
+          cep: '35189-000',
           municipio: 'Braúnas/MG'
         },
         contato: {
           telefone: '',
           email: ''
         },
-        cnaeCodigo: '47.11-3/02',
+        cnaeCodigo: '47.12-01/00',
         cnaeDescricao: 'Comércio varejista de mercadorias em geral (Minimercados, mercearias e armazéns)',
         cnaesSecundarios: [],
-        nivelRisco: 'Risco II',
+        nivelRisco: 'Risco I',
         dataUltimaInspecaoInicio: '',
         dataUltimaInspecaoFim: '',
         dataProximaInspecao: '',
@@ -126,7 +126,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
         numeroAlvara: `ALV-2026/${Math.floor(Math.random() * 80 + 10)}`,
         observacoesBaixa: '',
         competenciaFiscalizacao: 'Municipal',
-        parecerProjetoArquitetonico: 'Sim',
+        parecerProjetoArquitetonico: 'Não Aplicável',
         fiscaisUltimaInspecao: [FISCAIS_MUNICIPIO[0]]
       });
     }
@@ -142,7 +142,8 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
       ...prev,
       cnaeCodigo: cnaeItem.codigo,
       cnaeDescricao: cnaeItem.descricao,
-      nivelRisco: cnaeItem.risco as NivelRisco
+      nivelRisco: cnaeItem.risco as NivelRisco,
+      parecerProjetoArquitetonico: cnaeItem.risco === 'Risco I' ? 'Não Aplicável' : prev.parecerProjetoArquitetonico
     }));
   };
 
@@ -377,20 +378,31 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                 <span className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Atividades Típicas em Braúnas/MG (Clique para preencher o CNAE Principal):
                 </span>
-                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 bg-white rounded-lg border border-slate-200">
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-white rounded-lg border border-slate-200">
                   {CNAE_LISTA_COMUM.map((item) => (
                     <button
                       key={item.codigo}
                       type="button"
                       onClick={() => handleCnaeSelect(item)}
-                      className={`min-h-[34px] text-[11px] px-2.5 py-1 rounded border text-left transition cursor-pointer flex items-center ${
+                      className={`min-h-[34px] text-[11px] px-2.5 py-1 rounded border text-left transition cursor-pointer flex items-center gap-1 ${
                         formData.cnaeCodigo === item.codigo
                           ? 'bg-emerald-700 text-white border-emerald-700 font-bold'
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
-                      <span className="font-mono mr-1">{item.codigo}</span>
-                      <span>{item.descricao.slice(0, 26)}...</span>
+                      <span className="font-mono font-semibold">{item.codigo}</span>
+                      <span className="truncate max-w-[200px]">{item.descricao}</span>
+                      <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${
+                        formData.cnaeCodigo === item.codigo 
+                          ? 'bg-emerald-800 text-emerald-100' 
+                          : item.risco === 'Risco I' 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : item.risco === 'Risco II' 
+                              ? 'bg-amber-100 text-amber-800' 
+                              : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {item.risco}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -403,9 +415,34 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="Ex: 47.11-3/02"
+                    placeholder="Ex: 47.12-01/00"
                     value={formData.cnaeCodigo}
-                    onChange={(e) => setFormData({ ...formData, cnaeCodigo: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const cleanDigits = val.replace(/[^0-9]/g, '');
+                      if (cleanDigits === '47120100' || cleanDigits === '4712100' || val.trim() === '47.12-01/00' || val.trim() === '47.12-1/00') {
+                        setFormData({
+                          ...formData,
+                          cnaeCodigo: val,
+                          cnaeDescricao: 'Comércio varejista de mercadorias em geral (Minimercados, mercearias e armazéns)',
+                          nivelRisco: 'Risco I',
+                          parecerProjetoArquitetonico: 'Não Aplicável'
+                        });
+                        return;
+                      }
+                      const matched = CNAE_LISTA_COMUM.find(c => c.codigo.toLowerCase() === val.trim().toLowerCase());
+                      if (matched) {
+                        setFormData({
+                          ...formData,
+                          cnaeCodigo: val,
+                          cnaeDescricao: matched.descricao,
+                          nivelRisco: matched.risco as NivelRisco,
+                          parecerProjetoArquitetonico: matched.risco === 'Risco I' ? 'Não Aplicável' : formData.parecerProjetoArquitetonico
+                        });
+                      } else {
+                        setFormData({ ...formData, cnaeCodigo: val });
+                      }
+                    }}
                     className={`w-full min-h-[44px] text-xs px-3 rounded-lg border ${
                       errors.cnaeCodigo ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300 focus:border-emerald-600'
                     } outline-none font-mono text-slate-800 bg-white`}
@@ -625,7 +662,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="35169-000"
+                  placeholder="35189-000"
                   value={formData.endereco.cep}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -719,10 +756,11 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="situacaoAlvara" className="block text-xs font-semibold text-slate-700 mb-1">
                   Situação do Alvará Sanitário
                 </label>
                 <select
+                  id="situacaoAlvara"
                   value={formData.situacaoAlvara}
                   onChange={(e) => setFormData({ ...formData, situacaoAlvara: e.target.value as SituacaoAlvara })}
                   className="w-full min-h-[44px] text-xs px-3 rounded-lg border border-slate-300 focus:border-emerald-600 outline-none bg-white text-slate-800"
@@ -730,7 +768,16 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                   <option value="Válido">Válido</option>
                   <option value="Vencido">Vencido</option>
                   <option value="Isento/Dispensado">Isento / Dispensado</option>
+                  <option value="Não Possui (Irregular)">Não Possui (Irregular)</option>
                 </select>
+                {formData.situacaoAlvara === 'Não Possui (Irregular)' && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-rose-900 leading-relaxed font-medium">
+                      <strong>Irregular:</strong> A empresa deveria possuir alvará sanitário mas opera sem a devida licença. Sujeita a notificação fiscal e regularização perante a VISA.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

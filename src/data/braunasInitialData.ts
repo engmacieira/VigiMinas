@@ -7,7 +7,16 @@ export const FISCAIS_MUNICIPIO = [
 ];
 
 export const CNAE_LISTA_COMUM = [
-  { codigo: '47.11-3/02', descricao: 'Comércio varejista de mercadorias em geral (Minimercados, mercearias e armazéns)', risco: 'Risco II' },
+  { 
+    codigo: '47.12-01/00', 
+    descricao: 'Comércio varejista de mercadorias em geral (Minimercados, mercearias e armazéns)', 
+    risco: 'Risco I' 
+  },
+  { 
+    codigo: '47.11-3/02', 
+    descricao: 'Comércio varejista de mercadorias em geral, com predominância de produtos alimentícios - supermercados', 
+    risco: 'Risco II' 
+  },
   { codigo: '47.71-7/01', descricao: 'Comércio varejista de produtos farmacêuticos, sem manipulação de fórmulas', risco: 'Risco II' },
   { codigo: '10.91-1/02', descricao: 'Fabricação de produtos de padaria e confeitaria com predominância de produção própria', risco: 'Risco II' },
   { codigo: '47.22-9/01', descricao: 'Comércio varejista de carnes - açougues', risco: 'Risco II' },
@@ -34,7 +43,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Praça Monsenhor Horta',
       numero: '124',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -65,7 +74,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua Antônio Dias',
       numero: '88',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -96,7 +105,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua Getúlio Vargas',
       numero: '210',
       bairro: 'São Sebastião',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -127,7 +136,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Praça Monsenhor Horta',
       numero: '45',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -158,7 +167,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Córrego do Macuco',
       numero: 'S/N',
       bairro: 'Zona Rural',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -189,7 +198,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua São Sebastião',
       numero: '54',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -220,7 +229,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua Antônio Dias',
       numero: '142',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -251,7 +260,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua Bela Vista',
       numero: '12',
       bairro: 'Bela Vista',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -282,7 +291,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Avenida Beira Rio',
       numero: '500',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -313,7 +322,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua Antônio Dias',
       numero: '33',
       bairro: 'Centro',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -344,7 +353,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua São Vicente',
       numero: '100',
       bairro: 'Bela Vista',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -375,7 +384,7 @@ export const SEED_ESTABELECIMENTOS: Estabelecimento[] = [
       logradouro: 'Rua Bela Vista',
       numero: '78',
       bairro: 'Bela Vista',
-      cep: '35169-000',
+      cep: '35189-000',
       municipio: 'Braúnas/MG'
     },
     contato: {
@@ -511,7 +520,7 @@ export const SEED_CONFIGURACAO_SISTEMA: ConfiguracaoSistema = {
     cnpj: '18.315.241/0001-30',
     secretarioSaude: 'Dra. Maria Aparecida Ribeiro',
     coordenadorVisa: 'Lucas Silveira',
-    enderecoCompleto: 'Praça Embaixador Amaral, nº 12, Centro - Braúnas/MG, CEP 35169-000',
+    enderecoCompleto: 'Praça Embaixador Amaral, nº 12, Centro - Braúnas/MG, CEP 35189-000',
     telefoneOficial: '(33) 3745-1212',
     emailOficial: 'vigilancia.sanitaria@braunas.mg.gov.br',
     horarioAtendimento: 'Segunda a Sexta-feira, das 07:00 às 16:00',

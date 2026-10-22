@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Building2, 
   Search, 
@@ -20,7 +20,11 @@ import {
   X,
   RotateCcw,
   Archive,
-  ShieldAlert
+  ShieldAlert,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { 
   Estabelecimento, 
@@ -64,6 +68,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
   const [filtroAlvara, setFiltroAlvara] = useState<string>('todos');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [filtroInspecionado2026, setFiltroInspecionado2026] = useState<string>('todos');
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const ITENS_POR_PAGINA = 10;
 
   const totalAtivos = useMemo(() => estabelecimentos.filter(e => !e.isDeleted).length, [estabelecimentos]);
   const totalArquivados = useMemo(() => estabelecimentos.filter(e => e.isDeleted).length, [estabelecimentos]);
@@ -108,6 +114,20 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
     });
   }, [estabelecimentos, abaExibicao, busca, filtroRisco, filtroAlvara, filtroStatus, filtroInspecionado2026]);
 
+  // Reseta para a página 1 ao alterar qualquer filtro, busca ou aba
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [busca, filtroRisco, filtroAlvara, filtroStatus, filtroInspecionado2026, abaExibicao]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / ITENS_POR_PAGINA));
+  const paginaAjustada = Math.min(Math.max(1, paginaAtual), totalPaginas);
+  const indiceInicio = (paginaAjustada - 1) * ITENS_POR_PAGINA;
+  const indiceFim = Math.min(indiceInicio + ITENS_POR_PAGINA, filtrados.length);
+
+  const estabelecimentosPaginados = useMemo(() => {
+    return filtrados.slice(indiceInicio, indiceFim);
+  }, [filtrados, indiceInicio, indiceFim]);
+
   const getRiscoBadge = (risco: NivelRisco) => {
     switch (risco) {
       case 'Risco I':
@@ -140,6 +160,13 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-100 text-sky-900 border border-sky-200">
             <CheckCircle2 className="w-3 h-3 text-sky-700" strokeWidth={2.5} />
             Dispensado
+          </span>
+        );
+      case 'Não Possui (Irregular)':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-950 border border-amber-400">
+            <AlertTriangle className="w-3 h-3 text-amber-700" strokeWidth={2.5} />
+            Não Possui (Irregular)
           </span>
         );
     }
@@ -290,6 +317,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                 <option value="Válido">Válido</option>
                 <option value="Vencido">Vencido</option>
                 <option value="Isento/Dispensado">Isento/Dispensado</option>
+                <option value="Não Possui (Irregular)">Não Possui (Irregular)</option>
               </select>
 
               <select
@@ -316,9 +344,14 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
         </div>
 
         {/* Resumo da Contagem */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 flex-wrap gap-2">
           <span>
-            Exibindo <strong>{filtrados.length}</strong> {abaExibicao === 'ativos' ? `de ${totalAtivos} cadastros ativos` : `de ${totalArquivados} estabelecimentos arquivados`}
+            Exibindo <strong>{filtrados.length > 0 ? `${indiceInicio + 1} a ${indiceFim}` : '0'}</strong> de <strong>{filtrados.length}</strong> {abaExibicao === 'ativos' ? `cadastros ativos` : `estabelecimentos arquivados`}
+            {totalPaginas > 1 && (
+              <span className="text-slate-400 font-medium ml-1.5">
+                (Página {paginaAjustada} de {totalPaginas} • 10 por página)
+              </span>
+            )}
           </span>
           {(busca || filtroRisco !== 'todos' || filtroAlvara !== 'todos' || filtroStatus !== 'todos' || filtroInspecionado2026 !== 'todos') && (
             <button
@@ -343,7 +376,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                <th className="py-3 px-4">Estabelecimento / CNPJ</th>
+                <th className="py-3 px-4">Nome Fantasia / Razão Social</th>
                 <th className="py-3 px-4">Atividade (CNAE)</th>
                 <th className="py-3 px-4">Risco</th>
                 {abaExibicao === 'ativos' ? (
@@ -374,21 +407,25 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                   </td>
                 </tr>
               ) : (
-                filtrados.map((est) => {
+                estabelecimentosPaginados.map((est) => {
                   if (abaExibicao === 'arquivados') {
                     return (
                       <tr 
                         key={est.id} 
                         className="hover:bg-rose-50/40 bg-rose-50/20 text-slate-700 transition duration-100"
                       >
-                        {/* Identificação */}
+                        {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
                         <td className="py-3 px-4">
                           <span className="font-bold text-slate-900 text-xs block">
-                            {est.razaoSocial}
+                            {est.nomeFantasia || est.razaoSocial}
                           </span>
-                          {est.nomeFantasia && (
-                            <span className="text-[11px] text-slate-500 block">
-                              {est.nomeFantasia}
+                          {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
+                            <span className="text-[11px] text-slate-500 block truncate max-w-xs" title={est.razaoSocial}>
+                              {est.razaoSocial}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic block truncate max-w-xs" title="Razão Social">
+                              Razão: {est.razaoSocial}
                             </span>
                           )}
                           <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
@@ -473,14 +510,18 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                         est.situacaoEstabelecimento === 'Inativo' ? 'bg-slate-50/40 text-slate-500' : ''
                       }`}
                     >
-                      {/* Identificação */}
+                      {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
                       <td className="py-3 px-4">
                         <span className="font-bold text-slate-900 text-xs block">
-                          {est.razaoSocial}
+                          {est.nomeFantasia || est.razaoSocial}
                         </span>
-                        {est.nomeFantasia && (
-                          <span className="text-[11px] text-slate-500 block">
-                            {est.nomeFantasia}
+                        {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
+                          <span className="text-[11px] text-slate-500 block truncate max-w-xs" title={est.razaoSocial}>
+                            {est.razaoSocial}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic block truncate max-w-xs" title="Razão Social">
+                            Razão: {est.razaoSocial}
                           </span>
                         )}
                         <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
@@ -623,7 +664,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
             <p className="text-xs text-slate-400 mt-1">Ajuste os filtros ou crie um cadastro.</p>
           </div>
         ) : (
-          filtrados.map((est) => {
+          estabelecimentosPaginados.map((est) => {
             if (abaExibicao === 'arquivados') {
               return (
                 <div 
@@ -637,8 +678,17 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                         <span>Arquivado (Soft Delete)</span>
                       </div>
                       <h3 className="font-bold text-slate-900 text-sm leading-tight">
-                        {est.razaoSocial}
+                        {est.nomeFantasia || est.razaoSocial}
                       </h3>
+                      {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {est.razaoSocial}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic mt-0.5">
+                          Razão: {est.razaoSocial}
+                        </p>
+                      )}
                       <div className="text-xs text-slate-500 mt-0.5 font-mono flex items-center gap-1.5 flex-wrap">
                         <span>{est.cnpjCpf}</span>
                         {est.identificacaoMunicipal && (
@@ -684,8 +734,17 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm leading-tight">
-                      {est.razaoSocial}
+                      {est.nomeFantasia || est.razaoSocial}
                     </h3>
+                    {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {est.razaoSocial}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic mt-0.5">
+                        Razão: {est.razaoSocial}
+                      </p>
+                    )}
                     <div className="text-xs text-slate-500 mt-0.5 font-mono flex items-center gap-1.5 flex-wrap">
                       <span>{est.cnpjCpf}</span>
                       {est.identificacaoMunicipal && (
@@ -780,6 +839,98 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           })
         )}
       </div>
+
+      {/* Controles de Paginação (10 estabelecimentos por página) */}
+      {filtrados.length > 0 && (
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs text-slate-600 text-center sm:text-left">
+            Mostrando <strong>{indiceInicio + 1}</strong> a <strong>{indiceFim}</strong> de <strong>{filtrados.length}</strong> {abaExibicao === 'ativos' ? 'estabelecimentos ativos' : 'arquivados'}
+            {totalPaginas > 1 && (
+              <span className="text-slate-400 font-medium ml-1.5">
+                (Página {paginaAjustada} de {totalPaginas})
+              </span>
+            )}
+          </div>
+
+          {totalPaginas > 1 && (
+            <div className="flex items-center gap-1 flex-wrap justify-center">
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(1)}
+                disabled={paginaAjustada === 1}
+                aria-label="Primeira Página"
+                title="Primeira Página"
+                className="min-w-[40px] min-h-[40px] px-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center cursor-pointer text-xs"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(prev => Math.max(1, prev - 1))}
+                disabled={paginaAjustada === 1}
+                aria-label="Página Anterior"
+                title="Página Anterior"
+                className="min-w-[40px] min-h-[40px] px-2.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-1 cursor-pointer text-xs font-semibold"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Anterior</span>
+              </button>
+
+              {/* Botões Numéricos de Página */}
+              {Array.from({ length: totalPaginas }, (_, i) => i + 1)
+                .filter(num => {
+                  if (num === 1 || num === totalPaginas) return true;
+                  return Math.abs(num - paginaAjustada) <= 1;
+                })
+                .map((num, idx, arr) => {
+                  const showEllipsisBefore = idx > 0 && num - arr[idx - 1] > 1;
+                  return (
+                    <React.Fragment key={num}>
+                      {showEllipsisBefore && (
+                        <span className="px-1 text-slate-400 text-xs">...</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setPaginaAtual(num)}
+                        className={`min-w-[40px] min-h-[40px] px-3 rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                          paginaAjustada === num
+                            ? 'bg-emerald-600 text-white shadow-xs border border-emerald-600'
+                            : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
+
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(prev => Math.min(totalPaginas, prev + 1))}
+                disabled={paginaAjustada === totalPaginas}
+                aria-label="Próxima Página"
+                title="Próxima Página"
+                className="min-w-[40px] min-h-[40px] px-2.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-1 cursor-pointer text-xs font-semibold"
+              >
+                <span className="hidden sm:inline">Próxima</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(totalPaginas)}
+                disabled={paginaAjustada === totalPaginas}
+                aria-label="Última Página"
+                title="Última Página"
+                className="min-w-[40px] min-h-[40px] px-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center cursor-pointer text-xs"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );

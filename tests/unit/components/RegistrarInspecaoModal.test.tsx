@@ -35,7 +35,7 @@ describe('RegistrarInspecaoModal - Unit Tests', () => {
     parecerProjetoArquitetonico: 'Sim',
     cnaeCodigo: '4771-7/01',
     cnaeDescricao: 'Comércio varejista de produtos farmacêuticos',
-    endereco: { logradouro: 'Rua Principal', numero: '10', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+    endereco: { logradouro: 'Rua Principal', numero: '10', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
     contato: { telefone: '3332950000', email: 'drogaria@test.com' },
     situacaoAlvara: 'Válido'
   };

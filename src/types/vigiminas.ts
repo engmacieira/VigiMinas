@@ -1,6 +1,6 @@
 export type NivelRisco = 'Risco I' | 'Risco II' | 'Risco III';
 export type SituacaoEstabelecimento = 'Ativo' | 'Inativo';
-export type SituacaoAlvara = 'Válido' | 'Vencido' | 'Isento/Dispensado';
+export type SituacaoAlvara = 'Válido' | 'Vencido' | 'Isento/Dispensado' | 'Não Possui (Irregular)';
 export type CompetenciaFiscalizacao = 'Municipal' | 'Estadual' | 'Pactuado';
 export type ParecerProjeto = 'Sim' | 'Não' | 'Não Aplicável';
 export type StatusInspecaoVapt = 'Concluída' | 'Em Acompanhamento';

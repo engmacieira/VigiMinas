@@ -53,7 +53,7 @@ function gerarBufferPlanilhaVolumosa(quantidadeLinhas: number): Uint8Array {
       'LOGRADOURO': `Rua Volume ${i}`,
       'NUMERO': `${i}`,
       'BAIRRO': 'Centro',
-      'CEP': '35169-000',
+      'CEP': '35189-000',
       'MUNICIPIO': 'Braúnas/MG'
     });
   }

@@ -15,7 +15,7 @@ const mockProcessarArquivoPlanilha = vi.fn().mockReturnValue({
       situacaoAlvara: 'Válido',
       cnaeCodigo: '4771-7/01',
       cnaeDescricao: 'Drogaria',
-      endereco: { logradouro: 'Av. Brasil', numero: '100', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+      endereco: { logradouro: 'Av. Brasil', numero: '100', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
       contato: { telefone: '3332951000', email: 'contato@import.com' }
     }
   ],

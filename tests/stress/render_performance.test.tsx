@@ -85,7 +85,7 @@ function gerarEstabelecimentosSinteticos(quantidade: number): Estabelecimento[] 
         logradouro: `Rua Sintetica ${i}`,
         numero: `${i}`,
         bairro: `Bairro ${i % 10}`,
-        cep: '35169-000',
+        cep: '35189-000',
         municipio: 'Braúnas/MG'
       },
       contato: {

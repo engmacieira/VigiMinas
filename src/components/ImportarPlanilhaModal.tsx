@@ -385,8 +385,11 @@ export const ImportarPlanilhaModal: React.FC<ImportarPlanilhaModalProps> = ({ is
                               <td className="p-2.5 font-mono text-slate-600">{est.cnaeCodigo}</td>
                               <td className="p-2.5 text-slate-600 truncate">{est.endereco.bairro}</td>
                               <td className="p-2.5 text-slate-600">
-                                <span className={`px-1.5 py-0.2 rounded font-semibold ${
-                                  est.situacaoAlvara === 'Válido' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                <span className={`px-1.5 py-0.5 rounded font-semibold ${
+                                  est.situacaoAlvara === 'Válido' ? 'bg-emerald-100 text-emerald-800' :
+                                  est.situacaoAlvara === 'Isento/Dispensado' ? 'bg-sky-100 text-sky-800' :
+                                  est.situacaoAlvara === 'Não Possui (Irregular)' ? 'bg-amber-100 text-amber-950 border border-amber-300' :
+                                  'bg-rose-100 text-rose-800'
                                 }`}>
                                   {est.situacaoAlvara}
                                 </span>

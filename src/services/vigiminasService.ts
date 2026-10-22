@@ -20,7 +20,8 @@ import {
   OpcoesExportacao,
   ResultadoExportacao,
   AlertasInspecoesVapt,
-  AlertaInspecaoVaptInfo
+  AlertaInspecaoVaptInfo,
+  SituacaoAlvara
 } from '../types/vigiminas';
 import {
   createWithAudit,
@@ -676,7 +677,7 @@ export function exportarPlanilhaVigiMinas(
     'Logradouro': e.endereco?.logradouro || '',
     'Número': e.endereco?.numero || 'S/N',
     'Bairro': e.endereco?.bairro || '',
-    'CEP': e.endereco?.cep || '35169-000',
+    'CEP': e.endereco?.cep || '35189-000',
     'Município / UF': e.endereco?.municipio || 'Braúnas/MG',
     'Telefone': e.contato?.telefone || '-',
     'E-mail': e.contato?.email || '-',
@@ -900,7 +901,7 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
       'LOGRADOURO': 'Av. Brasil',
       'NUMERO': '150',
       'BAIRRO': 'Centro',
-      'CEP': '35179-000',
+      'CEP': '35189-000',
       'MUNICIPIO': 'Braúnas/MG',
       'TELEFONE': '(33) 3295-1234',
       'EMAIL': 'contato@drogariacentralbraunas.com.br',
@@ -928,7 +929,7 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
       'LOGRADOURO': 'Rua Tiradentes',
       'NUMERO': '42',
       'BAIRRO': 'Centro',
-      'CEP': '35179-000',
+      'CEP': '35189-000',
       'MUNICIPIO': 'Braúnas/MG',
       'TELEFONE': '(33) 99876-5432',
       'EMAIL': 'financeiro@supermercadobompreco.com.br',
@@ -956,7 +957,7 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
       'LOGRADOURO': 'Rua Minas Gerais',
       'NUMERO': '88',
       'BAIRRO': 'Bela Vista',
-      'CEP': '35179-000',
+      'CEP': '35189-000',
       'MUNICIPIO': 'Braúnas/MG',
       'TELEFONE': '(33) 3295-4321',
       'EMAIL': 'laudos@laboratoriosantarita.com.br',
@@ -987,12 +988,12 @@ export function gerarPlanilhaModeloEstabelecimentos(): void {
     { 'CAMPO': 'LOGRADOURO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Rua, Avenida, Praça, etc.' },
     { 'CAMPO': 'NUMERO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto/Número', 'DESCRICAO': 'Número do imóvel ou S/N.' },
     { 'CAMPO': 'BAIRRO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Bairro de localização em Braúnas/MG.' },
-    { 'CAMPO': 'CEP', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': '35179-000', 'DESCRICAO': 'Código de Endereçamento Postal.' },
+    { 'CAMPO': 'CEP', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': '35189-000', 'DESCRICAO': 'Código de Endereçamento Postal.' },
     { 'CAMPO': 'MUNICIPIO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Braúnas/MG', 'DESCRICAO': 'Município de competência sanitária.' },
     { 'CAMPO': 'TELEFONE', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': '(33) 0000-0000', 'DESCRICAO': 'Telefone fixo ou WhatsApp comercial.' },
     { 'CAMPO': 'EMAIL', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'nome@dominio.com', 'DESCRICAO': 'E-mail para notificações e termos sanitários.' },
     { 'CAMPO': 'SITUACAO_ESTABELECIMENTO', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Ativo ou Inativo', 'DESCRICAO': 'Situação cadastral na VISA.' },
-    { 'CAMPO': 'SITUACAO_ALVARA', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Válido, Vencido ou Isento/Dispensado', 'DESCRICAO': 'Status da licença/alvará sanitário.' },
+    { 'CAMPO': 'SITUACAO_ALVARA', 'OBRIGATORIO': 'Sim', 'FORMATO_ACEITO': 'Válido, Vencido, Isento/Dispensado ou Não Possui (Irregular)', 'DESCRICAO': 'Status da licença/alvará sanitário.' },
     { 'CAMPO': 'NUMERO_ALVARA', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'Texto', 'DESCRICAO': 'Número do alvará sanitário municipal.' },
     { 'CAMPO': 'VALIDADE_ALVARA', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'DD/MM/AAAA ou AAAA-MM-DD', 'DESCRICAO': 'Data de expiração da licença.' },
     { 'CAMPO': 'DATA_ULTIMA_INSPECAO_INICIO', 'OBRIGATORIO': 'Não', 'FORMATO_ACEITO': 'DD/MM/AAAA ou AAAA-MM-DD', 'DESCRICAO': 'Data do início da última vistoria sanitária.' },
@@ -1172,8 +1173,10 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
 
     // Normalização da Situação do Alvará
     const alvRaw = String(normalizedRow['situacaoalvara'] || normalizedRow['alvara'] || '').toUpperCase();
-    let situacaoAlvara: 'Válido' | 'Vencido' | 'Isento/Dispensado' = 'Válido';
-    if (alvRaw.includes('VENCID')) {
+    let situacaoAlvara: SituacaoAlvara = 'Válido';
+    if (alvRaw.includes('IRREGULAR') || alvRaw.includes('NÃO POSSUI') || alvRaw.includes('NAO POSSUI') || alvRaw.includes('SEM ALVARÁ') || alvRaw.includes('SEM ALVARA')) {
+      situacaoAlvara = 'Não Possui (Irregular)';
+    } else if (alvRaw.includes('VENCID')) {
       situacaoAlvara = 'Vencido';
     } else if (alvRaw.includes('ISENT') || alvRaw.includes('DISPENS')) {
       situacaoAlvara = 'Isento/Dispensado';
@@ -1226,7 +1229,7 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
         logradouro: String(normalizedRow['logradouro'] || normalizedRow['rua'] || normalizedRow['endereco'] || 'Zona Urbana').trim(),
         numero: String(normalizedRow['numero'] || normalizedRow['num'] || 'S/N').trim(),
         bairro: String(normalizedRow['bairro'] || 'Centro').trim(),
-        cep: aplicarMascaraCep(String(normalizedRow['cep'] || '35179-000')),
+        cep: aplicarMascaraCep(String(normalizedRow['cep'] || '35189-000')),
         municipio: String(normalizedRow['municipio'] || 'Braúnas/MG').trim()
       },
       contato: {

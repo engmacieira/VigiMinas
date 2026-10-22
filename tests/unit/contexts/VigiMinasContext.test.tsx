@@ -19,7 +19,7 @@ vi.mock('@/src/services/vigiminasService', () => ({
       situacaoEstabelecimento: 'Ativo',
       cnaeCodigo: '1091-1/01',
       cnaeDescricao: 'Padaria',
-      endereco: { logradouro: 'Rua Principal', numero: '10', bairro: 'Centro', cep: '35169-000', municipio: 'Braúnas/MG' },
+      endereco: { logradouro: 'Rua Principal', numero: '10', bairro: 'Centro', cep: '35189-000', municipio: 'Braúnas/MG' },
       contato: { telefone: '3332950000', email: 'alfa@test.com' },
       situacaoAlvara: 'Válido'
     }
