@@ -4,12 +4,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LoginPage } from '../../../src/pages/LoginPage';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { Usuario } from '../../../src/types/vigiminas';
 
 vi.mock('../../../src/contexts/AuthContext', () => ({
   useAuth: vi.fn()
 }));
 
-const mockUsuarios = [
+const mockUsuarios: Usuario[] = [
   {
     id: 'u-1',
     username: 'Matheus',

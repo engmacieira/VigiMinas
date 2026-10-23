@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Trash2, 
   X, 
@@ -50,7 +50,7 @@ const MOTIVOS_SUGERIDOS: Record<TipoEntidadeExclusao, string[]> = {
   ]
 };
 
-export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
+export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = React.memo(({
   isOpen,
   onClose,
   onConfirm,
@@ -72,9 +72,18 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
     }
   }, [isOpen, tipo]);
 
-  if (!isOpen) return null;
+  // Tecla Escape para fechar modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !processando) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, processando, onClose]);
 
-  const handleConfirmar = async () => {
+  const handleConfirmar = useCallback(async () => {
     const motivoFinal = motivoPersonalizado.trim() 
       ? `${motivoSelecionado}: ${motivoPersonalizado.trim()}`
       : (motivoSelecionado || (isPermanentAction ? 'Exclusão definitiva solicitada na aba de arquivados' : 'Arquivamento realizado via interface'));
@@ -88,7 +97,9 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
     } finally {
       setProcessando(false);
     }
-  };
+  }, [motivoPersonalizado, motivoSelecionado, isPermanentAction, onConfirm, onClose]);
+
+  if (!isOpen) return null;
 
   const getTipoIcon = () => {
     switch (tipo) {
@@ -138,10 +149,11 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             disabled={processando}
             aria-label="Fechar"
-            className="w-10 h-10 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-rose-100/60 transition flex items-center justify-center cursor-pointer"
+            className="w-10 h-10 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-rose-100/60 transition flex items-center justify-center cursor-pointer disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -182,16 +194,18 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
           </div>
 
           {/* Seleção do Motivo */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-700">
+          <fieldset className="space-y-2">
+            <legend className="block text-xs font-bold text-slate-700">
               Justificativa Sanitária / Motivo da Exclusão *
-            </label>
+            </legend>
             <div className="space-y-1.5">
-              {MOTIVOS_SUGERIDOS[tipo].map((motivo) => {
+              {MOTIVOS_SUGERIDOS[tipo].map((motivo, idx) => {
                 const isSelected = motivoSelecionado === motivo;
+                const radioId = `radio-motivo-${tipo}-${idx}`;
                 return (
                   <label
                     key={motivo}
+                    htmlFor={radioId}
                     className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition ${
                       isSelected 
                         ? 'bg-rose-50/70 border-rose-300 text-rose-950 font-semibold' 
@@ -200,9 +214,11 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
                   >
                     <input
                       type="radio"
+                      id={radioId}
                       name="motivo-exclusao"
                       value={motivo}
                       checked={isSelected}
+                      disabled={processando}
                       onChange={() => setMotivoSelecionado(motivo)}
                       className="mt-0.5 text-rose-600 focus:ring-rose-500 accent-rose-600 cursor-pointer"
                     />
@@ -211,16 +227,18 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
                 );
               })}
             </div>
-          </div>
+          </fieldset>
 
           {/* Observações Adicionais Opcionais */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="textarea-motivo-personalizado" className="block text-xs font-semibold text-slate-700 mb-1">
               Observações / Complemento da Justificativa (opcional)
             </label>
             <textarea
+              id="textarea-motivo-personalizado"
               rows={2}
               value={motivoPersonalizado}
+              disabled={processando}
               onChange={(e) => setMotivoPersonalizado(e.target.value)}
               placeholder="Ex: Conforme processo administrativo nº 12/2026 da VISA de Braúnas/MG..."
               className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none text-slate-800"
@@ -234,7 +252,7 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={processando}
-            className="min-h-[44px] px-4 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200/80 transition cursor-pointer"
+            className="min-h-[44px] px-4 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200/80 transition cursor-pointer disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -243,13 +261,25 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
             type="button"
             onClick={handleConfirmar}
             disabled={processando}
+            aria-busy={processando}
             className="min-h-[44px] px-5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
           >
-            <Trash2 className="w-4 h-4" />
-            <span>{processando ? (isPermanentAction ? 'Excluindo...' : 'Arquivando...') : (isPermanentAction ? 'Confirmar Exclusão' : 'Confirmar Arquivamento')}</span>
+            {processando ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>{isPermanentAction ? 'Excluindo...' : 'Arquivando...'}</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                <span>{isPermanentAction ? 'Confirmar Exclusão' : 'Confirmar Arquivamento'}</span>
+              </>
+            )}
           </button>
         </div>
       </div>
     </div>
   );
-};
+});
+
+ConfirmarExclusaoModal.displayName = 'ConfirmarExclusaoModal';

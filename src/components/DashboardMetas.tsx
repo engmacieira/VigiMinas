@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { 
   Building2, 
   FileSpreadsheet, 
@@ -24,7 +24,7 @@ interface DashboardMetasProps {
   onGoToVapt: () => void;
 }
 
-export const DashboardMetas: React.FC<DashboardMetasProps> = ({
+export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
   indicadores,
   estabelecimentos,
   onExportExcel,
@@ -36,26 +36,37 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
   const anoStr = String(configuracao.exercicioAtivo.anoExercicio || indicadores.anoReferencia);
   const { metaInd11Vapt, metaInd13RiscoI, metaInd14RiscoII, metaInd15RiscoIII } = configuracao.exercicioAtivo;
 
-  // Estabelecimentos que exigem ação prioritária para fechar metas do exercício ativo (inclui Suspensos)
-  const pendentesRiscoIII = estabelecimentos.filter(e => 
-    (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') && 
-    e.nivelRisco === 'Risco III' &&
-    (!e.dataUltimaInspecaoInicio || !e.dataUltimaInspecaoInicio.startsWith(anoStr))
-  );
+  // Estabelecimentos que exigem ação prioritária para fechar metas do exercício ativo - Memorizado
+  const pendentesRiscoIII = useMemo(() => {
+    return estabelecimentos.filter(e =>
+      (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') &&
+      e.nivelRisco === 'Risco III' &&
+      (!e.dataUltimaInspecaoInicio || !e.dataUltimaInspecaoInicio.startsWith(anoStr))
+    );
+  }, [estabelecimentos, anoStr]);
 
-  const pendentesRiscoII = estabelecimentos.filter(e => 
-    (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') && 
-    e.nivelRisco === 'Risco II' &&
-    (!e.dataUltimaInspecaoInicio || !e.dataUltimaInspecaoInicio.startsWith(anoStr))
-  );
+  const pendentesRiscoII = useMemo(() => {
+    return estabelecimentos.filter(e =>
+      (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') &&
+      e.nivelRisco === 'Risco II' &&
+      (!e.dataUltimaInspecaoInicio || !e.dataUltimaInspecaoInicio.startsWith(anoStr))
+    );
+  }, [estabelecimentos, anoStr]);
 
-  const totalMetasConformes = [
-    indicadores.ind11MetaAtingida,
-    true, // Indicador 12 cadastro ativo
-    indicadores.ind13MetaAtingida,
-    indicadores.ind14MetaAtingida,
-    indicadores.ind15MetaAtingida
-  ].filter(Boolean).length;
+  const totalMetasConformes = useMemo(() => {
+    return [
+      indicadores.ind11MetaAtingida,
+      true, // Indicador 12 cadastro ativo
+      indicadores.ind13MetaAtingida,
+      indicadores.ind14MetaAtingida,
+      indicadores.ind15MetaAtingida
+    ].filter(Boolean).length;
+  }, [indicadores]);
+
+  // Equipe de fiscais ativos formatada - Memorizada
+  const nomesFiscaisAtivos = useMemo(() => {
+    return configuracao.fiscais.filter(f => f.ativo).map(f => f.nome).join(', ');
+  }, [configuracao.fiscais]);
 
   return (
     <div className="space-y-6">
@@ -85,7 +96,9 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
         <div className="flex items-center gap-2.5 shrink-0">
           <button
+            type="button"
             onClick={onExportExcel}
+            aria-label="Exportar Planilha Oficial em Excel"
             className="min-h-[44px] px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition duration-150 ease-out flex items-center gap-2 cursor-pointer shadow-xs active:scale-97"
           >
             <FileSpreadsheet className="w-4 h-4" strokeWidth={2} />
@@ -146,7 +159,9 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100">
             <button
+              type="button"
               onClick={onGoToEstabelecimentos}
+              aria-label="Gerenciar estabelecimentos"
               className="w-full min-h-[44px] px-3 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition flex items-center justify-between cursor-pointer"
             >
               <span>Gerenciar estabelecimentos</span>
@@ -219,7 +234,9 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100">
             <button
+              type="button"
               onClick={onGoToEstabelecimentos}
+              aria-label="Filtrar unidades Risco I"
               className="w-full min-h-[44px] px-3 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition flex items-center justify-between cursor-pointer"
             >
               <span>Filtrar unidades Risco I</span>
@@ -292,7 +309,9 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100">
             <button
+              type="button"
               onClick={onGoToEstabelecimentos}
+              aria-label="Filtrar unidades Risco II"
               className="w-full min-h-[44px] px-3 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition flex items-center justify-between cursor-pointer"
             >
               <span>Filtrar unidades Risco II</span>
@@ -364,7 +383,9 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100">
             <button
+              type="button"
               onClick={onGoToEstabelecimentos}
+              aria-label="Ver unidades de Alto Risco"
               className="w-full min-h-[44px] px-3 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition flex items-center justify-between cursor-pointer"
             >
               <span>Ver unidades de Alto Risco</span>
@@ -420,10 +441,12 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
             <span className="text-xs text-slate-400">
-              Equipe ativa: {configuracao.fiscais.filter(f => f.ativo).map(f => f.nome).join(', ')}
+              Equipe ativa: {nomesFiscaisAtivos}
             </span>
             <button
+              type="button"
               onClick={onGoToVapt}
+              aria-label="Acessar vistorias e termos VAPT"
               className="min-h-[44px] px-3.5 rounded-lg text-xs font-semibold text-teal-800 hover:text-teal-950 hover:bg-teal-50/80 transition flex items-center gap-1.5 cursor-pointer"
             >
               <span>Acessar vistorias e termos</span>
@@ -434,7 +457,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
       </div>
 
-      {/* Tabela de Prioridades Sanitárias: Zero Card-ception, design tabular limpo */}
+      {/* Tabela de Prioridades Sanitárias */}
       {(pendentesRiscoIII.length > 0 || pendentesRiscoII.length > 0) && (
         <div className="bg-white rounded-xl border border-slate-200/90 overflow-hidden">
           
@@ -472,7 +495,9 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => onOpenQuickInspecao(est)}
+                  aria-label={`Registrar Inspeção para ${est.razaoSocial}`}
                   className="min-h-[44px] px-3.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition duration-150 ease-out flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-97 shrink-0"
                 >
                   <PlusCircle className="w-4 h-4" strokeWidth={2} />
@@ -502,7 +527,9 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => onOpenQuickInspecao(est)}
+                  aria-label={`Registrar Inspeção para ${est.razaoSocial}`}
                   className="min-h-[44px] px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition duration-150 ease-out flex items-center justify-center gap-1.5 cursor-pointer active:scale-97 shrink-0"
                 >
                   <PlusCircle className="w-4 h-4" strokeWidth={2} />
@@ -517,4 +544,6 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = ({
 
     </div>
   );
-};
+});
+
+DashboardMetas.displayName = 'DashboardMetas';

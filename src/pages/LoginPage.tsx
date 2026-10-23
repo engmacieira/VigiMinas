@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { 
   ShieldCheck, 
@@ -33,24 +33,23 @@ export const LoginPage: React.FC = () => {
     return usuarios.filter(u => u.ativo);
   }, [usuarios]);
 
-  // Se houver apenas 1 usuário cadastrado e nenhum selecionado, pré-seleciona para agilizar
+  // Se houver apenas 1 usuário cadastrado e nenhum selecionado, pré-seleciona
   useEffect(() => {
     if (usuariosAtivos.length === 1 && !username) {
       setUsername(usuariosAtivos[0].username);
     }
   }, [usuariosAtivos, username]);
 
-  // Usuário atualmente selecionado no select
+  // Usuário atualmente selecionado
   const usuarioSelecionado = useMemo(() => {
     return usuariosAtivos.find(u => u.username === username);
   }, [usuariosAtivos, username]);
 
-  // Se já estiver autenticado, redireciona para a tela inicial
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
+  const toggleMostrarSenha = useCallback(() => {
+    setMostrarSenha(prev => !prev);
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setErroLocal(null);
 
@@ -73,7 +72,12 @@ export const LoginPage: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [username, senha, login, navigate]);
+
+  // Se já estiver autenticado, redireciona
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-10 selection:bg-emerald-500 selection:text-white relative overflow-hidden">
@@ -120,10 +124,11 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Mensagem de Erro Visual */}
+          {/* Mensagem de Erro Visual e para leitores de tela */}
           {(erroLocal || erroLogin) && (
             <div 
               role="alert"
+              aria-live="assertive"
               className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in duration-200"
             >
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
@@ -147,6 +152,7 @@ export const LoginPage: React.FC = () => {
                 
                 <select
                   id="select-usuario"
+                  aria-label="Selecione o Usuário"
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
@@ -160,7 +166,7 @@ export const LoginPage: React.FC = () => {
                   </option>
                   {usuariosAtivos.map(u => (
                     <option key={u.id} value={u.username} className="text-white bg-slate-900 py-2">
-                      {u.nomeCompleto} (@{u.username}) • {u.cargo}
+                      {u.nomeCompleto} (@{u.username})
                     </option>
                   ))}
                 </select>
@@ -210,6 +216,7 @@ export const LoginPage: React.FC = () => {
                 </div>
                 <input
                   id="input-senha"
+                  aria-label="Senha de Acesso"
                   type={mostrarSenha ? 'text' : 'password'}
                   autoComplete="current-password"
                   autoFocus={!!username}
@@ -224,7 +231,7 @@ export const LoginPage: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setMostrarSenha(prev => !prev)}
+                  onClick={toggleMostrarSenha}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer transition"
                   aria-label={mostrarSenha ? 'Ocultar senha' : 'Exibir senha'}
                 >
@@ -237,6 +244,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={submitting || !username}
+              aria-busy={submitting}
               className="w-full min-h-[44px] mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-900/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (

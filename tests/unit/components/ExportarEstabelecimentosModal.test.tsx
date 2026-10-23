@@ -28,6 +28,19 @@ vi.mock('@/src/contexts/VigiMinasContext', () => ({
   })
 }));
 
+vi.mock('@/src/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    usuario: {
+      id: 'u-1',
+      username: 'Matheus',
+      nomeCompleto: 'Matheus Henrique Macieira',
+      email: 'matheus@email.com',
+      cargo: 'Coordenador',
+      funcao: 'admin_master'
+    }
+  })
+}));
+
 import { ExportarEstabelecimentosModal } from '@/src/components/ExportarEstabelecimentosModal';
 
 describe('ExportarEstabelecimentosModal - Unit Tests', () => {
