@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('@/src/contexts/VigiMinasContext', () => ({
   useVigiMinas: () => ({
@@ -70,6 +71,7 @@ describe('DashboardMetas - Unit Tests', () => {
   const mockOnOpenQuickInspecao = vi.fn();
   const mockOnGoToEstabelecimentos = vi.fn();
   const mockOnGoToVapt = vi.fn();
+  const mockOnGoToMetas = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -77,14 +79,17 @@ describe('DashboardMetas - Unit Tests', () => {
 
   it('renderiza os cards com resumo executivo e 5 indicadores', () => {
     render(
-      <DashboardMetas
-        indicadores={mockIndicadores}
-        estabelecimentos={mockEstabelecimentos}
-        onExportExcel={mockOnExportExcel}
-        onOpenQuickInspecao={mockOnOpenQuickInspecao}
-        onGoToEstabelecimentos={mockOnGoToEstabelecimentos}
-        onGoToVapt={mockOnGoToVapt}
-      />
+      <MemoryRouter>
+        <DashboardMetas
+          indicadores={mockIndicadores}
+          estabelecimentos={mockEstabelecimentos}
+          onExportExcel={mockOnExportExcel}
+          onOpenQuickInspecao={mockOnOpenQuickInspecao}
+          onGoToEstabelecimentos={mockOnGoToEstabelecimentos}
+          onGoToVapt={mockOnGoToVapt}
+          onGoToMetas={mockOnGoToMetas}
+        />
+      </MemoryRouter>
     );
 
     expect(screen.getByText('Painel de Apuração das Metas VigiMinas')).toBeInTheDocument();
@@ -97,14 +102,17 @@ describe('DashboardMetas - Unit Tests', () => {
 
   it('dispara acao de exportar planilha ao clicar no botao', () => {
     render(
-      <DashboardMetas
-        indicadores={mockIndicadores}
-        estabelecimentos={mockEstabelecimentos}
-        onExportExcel={mockOnExportExcel}
-        onOpenQuickInspecao={mockOnOpenQuickInspecao}
-        onGoToEstabelecimentos={mockOnGoToEstabelecimentos}
-        onGoToVapt={mockOnGoToVapt}
-      />
+      <MemoryRouter>
+        <DashboardMetas
+          indicadores={mockIndicadores}
+          estabelecimentos={mockEstabelecimentos}
+          onExportExcel={mockOnExportExcel}
+          onOpenQuickInspecao={mockOnOpenQuickInspecao}
+          onGoToEstabelecimentos={mockOnGoToEstabelecimentos}
+          onGoToVapt={mockOnGoToVapt}
+          onGoToMetas={mockOnGoToMetas}
+        />
+      </MemoryRouter>
     );
 
     const exportBtn = screen.getByText('Exportar Planilha Oficial (.xlsx)');
@@ -113,16 +121,19 @@ describe('DashboardMetas - Unit Tests', () => {
     expect(mockOnExportExcel).toHaveBeenCalled();
   });
 
-  it('exibe fila de vistoria prioritaria para estabelecimentos pendentes', () => {
+  it('exibe fila de vistoria prioritaria para estabelecimentos pendentes e navega para /metas via rodapé', () => {
     render(
-      <DashboardMetas
-        indicadores={mockIndicadores}
-        estabelecimentos={mockEstabelecimentos}
-        onExportExcel={mockOnExportExcel}
-        onOpenQuickInspecao={mockOnOpenQuickInspecao}
-        onGoToEstabelecimentos={mockOnGoToEstabelecimentos}
-        onGoToVapt={mockOnGoToVapt}
-      />
+      <MemoryRouter>
+        <DashboardMetas
+          indicadores={mockIndicadores}
+          estabelecimentos={mockEstabelecimentos}
+          onExportExcel={mockOnExportExcel}
+          onOpenQuickInspecao={mockOnOpenQuickInspecao}
+          onGoToEstabelecimentos={mockOnGoToEstabelecimentos}
+          onGoToVapt={mockOnGoToVapt}
+          onGoToMetas={mockOnGoToMetas}
+        />
+      </MemoryRouter>
     );
 
     expect(screen.getByText('Fila de Vistoria Prioritária para Metas de 2026')).toBeInTheDocument();
@@ -132,5 +143,10 @@ describe('DashboardMetas - Unit Tests', () => {
     fireEvent.click(inspecionarBtn);
 
     expect(mockOnOpenQuickInspecao).toHaveBeenCalledWith(mockEstabelecimentos[0]);
+
+    const linkRodape = screen.getByText('Ver todas as vistorias prioritárias (1 pendentes)');
+    fireEvent.click(linkRodape);
+
+    expect(mockOnGoToMetas).toHaveBeenCalled();
   });
 });

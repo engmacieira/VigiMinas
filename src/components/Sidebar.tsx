@@ -22,7 +22,9 @@ import {
   AlertTriangle,
   LogOut,
   UserCircle,
-  KeyRound
+  KeyRound,
+  Target,
+  ClipboardList
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
     logsAuditoria, 
     configuracao, 
     fiscaisAtivos,
+    estabelecimentos,
     loading 
   } = useVigiMinas();
   const navigate = useNavigate();
@@ -46,6 +49,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const anoStr = String(configuracao.exercicioAtivo.anoExercicio || indicadores.anoReferencia);
+
+  // Total de pendências prioritárias para o badge na Sidebar
+  const totalPendenciasMetas = estabelecimentos.filter(e =>
+    (e.situacaoEstabelecimento === 'Ativo' || e.situacaoEstabelecimento === 'Suspenso') &&
+    (e.nivelRisco === 'Risco III' || e.nivelRisco === 'Risco II') &&
+    (!e.dataUltimaInspecaoInicio || !e.dataUltimaInspecaoInicio.startsWith(anoStr))
+  ).length;
 
   // Link click handler (closes mobile drawer)
   const handleNavClick = () => {
@@ -223,6 +235,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 </div>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/80 shrink-0">
                   5 Metas
+                </span>
+              </NavLink>
+
+              {/* Metas 2026 / Fila Prioritária */}
+              <NavLink
+                to="/metas"
+                onClick={handleNavClick}
+                className={({ isActive }) =>
+                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
+                    isActive
+                      ? 'bg-emerald-500/15 text-emerald-300 font-bold shadow-xs border border-emerald-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`
+                }
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Target className="w-4 h-4 text-emerald-400 shrink-0" strokeWidth={2} />
+                  <span className="truncate">Metas 2026</span>
+                </div>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/80 shrink-0">
+                  {totalPendenciasMetas} pendentes
                 </span>
               </NavLink>
 

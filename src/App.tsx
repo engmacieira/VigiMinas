@@ -6,6 +6,7 @@ import { AppLayout } from './layouts/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { FilaMetasPage } from './pages/FilaMetasPage';
 import { EstabelecimentosPage } from './pages/EstabelecimentosPage';
 import { SaudeTrabalhadorPage } from './pages/SaudeTrabalhadorPage';
 import { RelatorioOficialPage } from './pages/RelatorioOficialPage';
@@ -25,6 +26,7 @@ export default function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/metas" element={<FilaMetasPage />} />
                 <Route path="/estabelecimentos" element={<EstabelecimentosPage />} />
                 <Route path="/saude-trabalhador" element={<SaudeTrabalhadorPage />} />
                 <Route path="/relatorio-oficial" element={<RelatorioOficialPage />} />
