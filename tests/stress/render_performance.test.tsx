@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('@/src/lib/firebase', () => ({
   db: {},
@@ -148,16 +149,18 @@ describe('Testes de Estresse: Desempenho de Renderização com Carga Massiva', (
 
     const inicio = performance.now();
     render(
-      <VigiMinasProvider>
-        <DashboardMetas
-          indicadores={indicadoresMock}
-          estabelecimentos={dados1k}
-          onExportExcel={() => {}}
-          onOpenQuickInspecao={() => {}}
-          onGoToEstabelecimentos={() => {}}
-          onGoToVapt={() => {}}
-        />
-      </VigiMinasProvider>
+      <MemoryRouter>
+        <VigiMinasProvider>
+          <DashboardMetas
+            indicadores={indicadoresMock}
+            estabelecimentos={dados1k}
+            onExportExcel={() => {}}
+            onOpenQuickInspecao={() => {}}
+            onGoToEstabelecimentos={() => {}}
+            onGoToVapt={() => {}}
+          />
+        </VigiMinasProvider>
+      </MemoryRouter>
     );
     const duracao = performance.now() - inicio;
 

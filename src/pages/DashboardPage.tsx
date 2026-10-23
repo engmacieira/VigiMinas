@@ -43,7 +43,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto px-1 sm:px-2">
       <DashboardMetas
         indicadores={indicadores}
         estabelecimentos={estabelecimentos}
@@ -51,6 +51,7 @@ export const DashboardPage: React.FC = () => {
         onOpenQuickInspecao={handleOpenQuickInspecao}
         onGoToEstabelecimentos={() => navigate('/estabelecimentos')}
         onGoToVapt={() => navigate('/saude-trabalhador')}
+        onGoToMetas={() => navigate('/metas')}
       />
 
       {/* Modal de Inspeção Rápida disparado pelo painel de prioridades */}
