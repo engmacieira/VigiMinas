@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -33,7 +33,30 @@ interface CalendarioInspecoesViewProps {
   onNovoEstabelecimento: () => void;
 }
 
-export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = ({
+const getRiscoEstilo = (risco: NivelRisco) => {
+  switch (risco) {
+    case 'Risco I':
+      return {
+        bg: 'bg-emerald-50 text-emerald-900 border-emerald-300',
+        dot: 'bg-emerald-600',
+        badge: 'bg-emerald-100 text-emerald-800'
+      };
+    case 'Risco II':
+      return {
+        bg: 'bg-amber-50 text-amber-900 border-amber-300',
+        dot: 'bg-amber-500',
+        badge: 'bg-amber-100 text-amber-900'
+      };
+    case 'Risco III':
+      return {
+        bg: 'bg-rose-50 text-rose-950 border-rose-300',
+        dot: 'bg-rose-600',
+        badge: 'bg-rose-100 text-rose-900'
+      };
+  }
+};
+
+export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = React.memo(({
   onRegistrarInspecaoRapida,
   onEditarEstabelecimento,
   onNovoEstabelecimento
@@ -52,28 +75,39 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
   const [modalManualAberto, setModalManualAberto] = useState(false);
   const [dataManualInput, setDataManualInput] = useState('');
 
-  // Nomes dos dias da semana e meses em português
-  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const meses = [
+  // Nomes dos dias da semana e meses em português (constantes memorizadas)
+  const diasSemana = useMemo(() => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'], []);
+  const meses = useMemo(() => [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
+  ], []);
 
   const anoAtual = dataNavegacao.getFullYear();
   const mesAtual = dataNavegacao.getMonth();
 
-  // Navegação
-  const handleMesAnterior = () => {
-    setDataNavegacao(new Date(anoAtual, mesAtual - 1, 1));
-  };
+  // Handlers de Navegação do Mês
+  const handleMesAnterior = useCallback(() => {
+    setDataNavegacao(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  }, []);
 
-  const handleMesSeguinte = () => {
-    setDataNavegacao(new Date(anoAtual, mesAtual + 1, 1));
-  };
+  const handleMesSeguinte = useCallback(() => {
+    setDataNavegacao(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }, []);
 
-  const handleHoje = () => {
+  const handleHoje = useCallback(() => {
     setDataNavegacao(new Date());
-  };
+  }, []);
+
+  // Atalho de Teclado (Escape para fechar o modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && modalManualAberto) {
+        setModalManualAberto(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalManualAberto]);
 
   // Cálculo da grade mensal de dias
   const diasDoMes = useMemo(() => {
@@ -109,10 +143,9 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
 
     // Dias do mês atual
     for (let dia = 1; dia <= totalDiasMes; dia++) {
-      const d = new Date(anoAtual, mesAtual, dia);
       const iso = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
       dias.push({
-        data: d,
+        data: new Date(anoAtual, mesAtual, dia),
         dataIso: iso,
         diaNumero: dia,
         isMesAtual: true,
@@ -141,51 +174,48 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
   const estabelecimentosPorData = useMemo(() => {
     const mapa = new Map<string, Estabelecimento[]>();
 
-    estabelecimentos.forEach(est => {
+    for (let i = 0; i < estabelecimentos.length; i++) {
+      const est = estabelecimentos[i];
       if (!est.isDeleted && est.dataProximaInspecao) {
         const dataKey = est.dataProximaInspecao.split('T')[0];
         const lista = mapa.get(dataKey) || [];
         lista.push(est);
         mapa.set(dataKey, lista);
       }
-    });
+    }
 
     return mapa;
   }, [estabelecimentos]);
 
   // Estabelecimentos Pendentes (Sem inspeção agendada para o futuro ou sem data definida)
   const pendentes = useMemo(() => {
+    const termo = busca.toLowerCase().trim();
+    const termoLimpo = termo.replace(/\D/g, '');
+    const hojeStr = new Date().toISOString().split('T')[0];
+
+    const prioridade: Record<NivelRisco, number> = {
+      'Risco III': 3,
+      'Risco II': 2,
+      'Risco I': 1
+    };
+
     return estabelecimentos
       .filter(est => {
         if (est.isDeleted) return false;
 
-        // Filtra por busca e risco
-        const termo = busca.toLowerCase().trim();
         const matchBusca = !termo ||
           est.razaoSocial.toLowerCase().includes(termo) ||
           (est.nomeFantasia && est.nomeFantasia.toLowerCase().includes(termo)) ||
-          est.cnpjCpf.replace(/\D/g, '').includes(termo.replace(/\D/g, '')) ||
+          (termoLimpo && est.cnpjCpf.replace(/\D/g, '').includes(termoLimpo)) ||
           (est.endereco?.bairro && est.endereco.bairro.toLowerCase().includes(termo));
 
         const matchRisco = filtroRisco === 'todos' || est.nivelRisco === filtroRisco;
 
-        // É pendente se estiver ativo e:
-        // 1. Não tiver data de próxima inspeção agendada OU
-        // 2. Data agendada estiver no passado / vencida
-        const hojeStr = new Date().toISOString().split('T')[0];
         const semDataFutura = !est.dataProximaInspecao || est.dataProximaInspecao < hojeStr;
 
         return (est.situacaoEstabelecimento === 'Ativo' || est.situacaoEstabelecimento === 'Suspenso') && semDataFutura && matchBusca && matchRisco;
       })
-      .sort((a, b) => {
-        // Prioriza Risco III primeiro, depois Risco II, depois Risco I
-        const prioridade: Record<NivelRisco, number> = {
-          'Risco III': 3,
-          'Risco II': 2,
-          'Risco I': 1
-        };
-        return prioridade[b.nivelRisco] - prioridade[a.nivelRisco];
-      });
+      .sort((a, b) => prioridade[b.nivelRisco] - prioridade[a.nivelRisco]);
   }, [estabelecimentos, busca, filtroRisco]);
 
   // Estatísticas do Mês
@@ -196,20 +226,21 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
     let riscoII = 0;
     let riscoI = 0;
 
-    estabelecimentos.forEach(est => {
+    for (let i = 0; i < estabelecimentos.length; i++) {
+      const est = estabelecimentos[i];
       if (!est.isDeleted && est.dataProximaInspecao && est.dataProximaInspecao.startsWith(prefixoMes)) {
         totalAgendadasMes++;
         if (est.nivelRisco === 'Risco III') riscoIII++;
         else if (est.nivelRisco === 'Risco II') riscoII++;
         else if (est.nivelRisco === 'Risco I') riscoI++;
       }
-    });
+    }
 
     return { totalAgendadasMes, riscoIII, riscoII, riscoI };
   }, [estabelecimentos, anoAtual, mesAtual]);
 
   // Função central para reagendar / agendar para uma data específica
-  const handleAgendarParaData = async (estId: string, dataIso: string) => {
+  const handleAgendarParaData = useCallback(async (estId: string, dataIso: string) => {
     const est = estabelecimentos.find(e => e.id === estId);
     if (!est) return;
 
@@ -231,10 +262,10 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
       setDiaHover(null);
       setItemArrastando(null);
     }
-  };
+  }, [estabelecimentos, salvarEstabelecimento, showToast]);
 
   // Desagendar / remover data
-  const handleDesagendar = async (est: Estabelecimento) => {
+  const handleDesagendar = useCallback(async (est: Estabelecimento) => {
     try {
       const estAtualizado: Estabelecimento = {
         ...est,
@@ -248,30 +279,26 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
       console.error('Falha ao desagendar:', err);
       showToast('Erro ao remover agendamento.');
     }
-  };
+  }, [salvarEstabelecimento, showToast]);
 
-  // Handlers de Drag and Drop Nativo
-  const handleDragStart = (e: React.DragEvent, estId: string) => {
+  // Handlers de Drag and Drop Nativo Memorizados
+  const handleDragStart = useCallback((e: React.DragEvent, estId: string) => {
     e.dataTransfer.setData('text/plain', estId);
     e.dataTransfer.effectAllowed = 'move';
     setItemArrastando(estId);
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent, dataIso: string) => {
+  const handleDragOver = useCallback((e: React.DragEvent, dataIso: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (diaHover !== dataIso) {
-      setDiaHover(dataIso);
-    }
-  };
+    setDiaHover(prev => (prev !== dataIso ? dataIso : prev));
+  }, []);
 
-  const handleDragLeave = (dataIso: string) => {
-    if (diaHover === dataIso) {
-      setDiaHover(null);
-    }
-  };
+  const handleDragLeave = useCallback((dataIso: string) => {
+    setDiaHover(prev => (prev === dataIso ? null : prev));
+  }, []);
 
-  const handleDrop = async (e: React.DragEvent, dataIso: string) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, dataIso: string) => {
     e.preventDefault();
     const estId = e.dataTransfer.getData('text/plain') || itemArrastando;
     if (estId) {
@@ -279,30 +306,13 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
     }
     setDiaHover(null);
     setItemArrastando(null);
-  };
+  }, [itemArrastando, handleAgendarParaData]);
 
-  const getRiscoEstilo = (risco: NivelRisco) => {
-    switch (risco) {
-      case 'Risco I':
-        return {
-          bg: 'bg-emerald-50 text-emerald-900 border-emerald-300',
-          dot: 'bg-emerald-600',
-          badge: 'bg-emerald-100 text-emerald-800'
-        };
-      case 'Risco II':
-        return {
-          bg: 'bg-amber-50 text-amber-900 border-amber-300',
-          dot: 'bg-amber-500',
-          badge: 'bg-amber-100 text-amber-900'
-        };
-      case 'Risco III':
-        return {
-          bg: 'bg-rose-50 text-rose-950 border-rose-300',
-          dot: 'bg-rose-600',
-          badge: 'bg-rose-100 text-rose-900'
-        };
-    }
-  };
+  const handleAbrirAgendamentoManual = useCallback((est: Estabelecimento) => {
+    setEstSelecionado(est);
+    setDataManualInput(est.dataProximaInspecao || new Date().toISOString().split('T')[0]);
+    setModalManualAberto(true);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -329,6 +339,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
           <button
             type="button"
             onClick={handleHoje}
+            aria-label="Ir para o mês atual"
             className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition border border-slate-300 cursor-pointer active:scale-[0.98]"
           >
             Mês Atual
@@ -359,6 +370,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
           <button
             type="button"
             onClick={onNovoEstabelecimento}
+            aria-label="Cadastrar Novo Estabelecimento"
             className="h-10 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
@@ -416,9 +428,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
       {/* Grade Principal: Coluna de Pendentes (Drag Source) + Calendário Mensal (Drop Target) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* ============================================================== */}
-        {/* COLUNA ESQUERDA: ESTABELECIMENTOS PENDENTES (DRAG & DROP)      */}
-        {/* ============================================================== */}
+        {/* COLUNA ESQUERDA: ESTABELECIMENTOS PENDENTES */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 flex flex-col h-[750px]">
           
           <div className="pb-3 border-b border-slate-100 space-y-3">
@@ -442,6 +452,8 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
+                id="input-busca-pendentes"
+                aria-label="Buscar estabelecimentos pendentes"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Filtrar por nome, CNPJ ou bairro..."
@@ -522,11 +534,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setEstSelecionado(est);
-                            setDataManualInput(est.dataProximaInspecao || new Date().toISOString().split('T')[0]);
-                            setModalManualAberto(true);
-                          }}
+                          onClick={() => handleAbrirAgendamentoManual(est)}
                           className="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition cursor-pointer"
                         >
                           Agendar
@@ -545,9 +553,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
           </div>
         </div>
 
-        {/* ============================================================== */}
-        {/* COLUNA DIREITA: GRADE DO CALENDÁRIO MENSAL (DROP TARGET)       */}
-        {/* ============================================================== */}
+        {/* COLUNA DIREITA: GRADE DO CALENDÁRIO MENSAL */}
         <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 flex flex-col">
           
           {/* Cabeçalho dos Dias da Semana */}
@@ -615,11 +621,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
                           key={est.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, est.id)}
-                          onClick={() => {
-                            setEstSelecionado(est);
-                            setDataManualInput(est.dataProximaInspecao || diaInfo.dataIso);
-                            setModalManualAberto(true);
-                          }}
+                          onClick={() => handleAbrirAgendamentoManual(est)}
                           title={`Inspeção prevista: ${est.razaoSocial} (${est.nivelRisco})\nClique para detalhes ou arraste para outro dia`}
                           className={`p-1.5 rounded-lg border text-[11px] font-semibold cursor-grab active:cursor-grabbing hover:shadow-xs transition duration-150 flex items-center justify-between gap-1 group ${estilo.bg}`}
                         >
@@ -680,15 +682,14 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
 
       </div>
 
-      {/* ============================================================== */}
-      {/* MODAL DE DETALHES / REAGENDAMENTO OU REGISTRO RÁPIDO           */}
-      {/* ============================================================== */}
+      {/* MODAL DE DETALHES / REAGENDAMENTO */}
       {modalManualAberto && estSelecionado && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div 
             className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col"
             role="dialog"
             aria-modal="true"
+            aria-labelledby="modal-agendamento-titulo"
           >
             {/* Topo do Modal */}
             <div className="p-5 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
@@ -697,7 +698,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
                   <CalendarDays className="w-5 h-5" strokeWidth={2.2} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 id="modal-agendamento-titulo" className="text-base font-bold text-slate-900">
                     Agendamento de Inspeção
                   </h3>
                   <p className="text-xs text-slate-500">
@@ -709,6 +710,7 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
               <button
                 type="button"
                 onClick={() => setModalManualAberto(false)}
+                aria-label="Fechar modal"
                 className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -761,12 +763,13 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
 
               {/* Seletor Manual de Data */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">
+                <label htmlFor="input-data-manual-inspecao" className="text-xs font-bold text-slate-700 block">
                   Data Prevista para a Inspeção Sanitária:
                 </label>
                 <div className="relative">
                   <input
                     type="date"
+                    id="input-data-manual-inspecao"
                     value={dataManualInput}
                     onChange={(e) => setDataManualInput(e.target.value)}
                     className="w-full h-11 px-3 text-xs rounded-xl border border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none text-slate-800"
@@ -845,4 +848,6 @@ export const CalendarioInspecoesView: React.FC<CalendarioInspecoesViewProps> = (
 
     </div>
   );
-};
+});
+
+CalendarioInspecoesView.displayName = 'CalendarioInspecoesView';

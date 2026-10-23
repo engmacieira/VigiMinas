@@ -37,7 +37,9 @@ vi.mock('@/src/lib/firestoreAuditMiddleware', () => ({
   createWithAudit: vi.fn().mockResolvedValue(undefined),
   updateWithAudit: vi.fn().mockResolvedValue(undefined),
   softDeleteWithAudit: vi.fn().mockResolvedValue(undefined),
-  restoreWithAudit: vi.fn().mockResolvedValue(undefined)
+  restoreWithAudit: vi.fn().mockResolvedValue(undefined),
+  getActiveAuditUser: vi.fn().mockReturnValue(null),
+  setActiveAuditUser: vi.fn()
 }));
 
 import {

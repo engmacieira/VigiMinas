@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, 
   Search, 
@@ -23,8 +23,205 @@ import {
   FileText
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
-import { AcaoAuditoria, OperacaoFirestore, ColecaoAuditada } from '../types/vigiminas';
+import { LogAuditoria, AcaoAuditoria, OperacaoFirestore, ColecaoAuditada } from '../types/vigiminas';
 import { FISCAIS_MUNICIPIO } from '../data/braunasInitialData';
+
+// Formatação memorizável fora do render
+const formatarDataHora = (iso: string) => {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  } catch {
+    return iso;
+  }
+};
+
+const getOperacaoBadge = (operacao?: OperacaoFirestore, acao?: AcaoAuditoria) => {
+  const op = operacao || (acao === 'Criação' ? 'create' : acao === 'Exclusão' ? 'delete' : acao === 'Exportação' ? 'export' : 'update');
+  switch (op) {
+    case 'create':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-900 border border-emerald-300">
+          <CheckCircle2 className="w-3 h-3 text-emerald-700" strokeWidth={2.5} />
+          CREATE
+        </span>
+      );
+    case 'update':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-blue-100 text-blue-900 border border-blue-300">
+          <Tag className="w-3 h-3 text-blue-700" strokeWidth={2.5} />
+          UPDATE
+        </span>
+      );
+    case 'delete':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-rose-100 text-rose-950 border border-rose-300">
+          <AlertCircle className="w-3 h-3 text-rose-700" strokeWidth={2.5} />
+          DELETE
+        </span>
+      );
+    case 'export':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-purple-100 text-purple-900 border border-purple-300">
+          <Database className="w-3 h-3 text-purple-700" strokeWidth={2.5} />
+          EXPORT
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-900 border border-slate-300">
+          LOG
+        </span>
+      );
+  }
+};
+
+const getColecaoBadge = (colecao?: ColecaoAuditada, tipo?: string) => {
+  const col = colecao || (tipo === 'InspecaoVapt' ? 'inspecoes_vapt' : tipo === 'ExportacaoBackup' ? 'backups_exportados' : 'estabelecimentos');
+  if (col === 'estabelecimentos') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-800 border border-slate-300">
+        <Building2 className="w-3 h-3 text-slate-600" />
+        estabelecimentos
+      </span>
+    );
+  }
+  if (col === 'backups_exportados') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-900 border border-purple-200">
+        <Database className="w-3 h-3 text-purple-700" />
+        backups_exportados
+      </span>
+    );
+  }
+  if (col === 'configuracoes_sistema') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-900 border border-amber-300">
+        <Sliders className="w-3 h-3 text-amber-700" />
+        configuracoes_sistema
+      </span>
+    );
+  }
+  if (col === 'usuarios') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-900 border border-indigo-200">
+        <UsersIcon className="w-3 h-3 text-indigo-700" />
+        usuarios
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-teal-50 text-teal-900 border border-teal-200">
+      <HardHat className="w-3 h-3 text-teal-700" />
+      inspecoes_vapt
+    </span>
+  );
+};
+
+interface LogRowItemProps {
+  log: LogAuditoria;
+}
+
+/**
+ * Subcomponente Puro memorizado via React.memo para isolar a renderização das linhas de log
+ */
+const LogRowItem: React.FC<LogRowItemProps> = React.memo(({ log }) => {
+  const alteracoesLista = useMemo(() => {
+    if (!log.alteracoes) return [];
+    if (Array.isArray(log.alteracoes)) return log.alteracoes;
+    if (typeof log.alteracoes === 'string') return [log.alteracoes];
+    return [];
+  }, [log.alteracoes]);
+
+  return (
+    <tr className="hover:bg-slate-50/80 transition">
+      {/* Timestamp */}
+      <td className="py-3 px-4 whitespace-nowrap align-top">
+        <div className="flex items-center gap-1.5 font-mono text-slate-700 text-[11px]">
+          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span>{formatarDataHora(log.timestamp)}</span>
+        </div>
+        <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
+          Log: {log.id.slice(0, 16)}...
+        </span>
+      </td>
+
+      {/* Operação e Coleção */}
+      <td className="py-3 px-4 whitespace-nowrap align-top">
+        <div className="flex flex-col gap-1.5">
+          <div>{getOperacaoBadge(log.operacao, log.acao)}</div>
+          <div>{getColecaoBadge(log.colecao, log.tipoRegistro)}</div>
+        </div>
+      </td>
+
+      {/* Recurso ID e Entidade */}
+      <td className="py-3 px-4 align-top">
+        <div className="space-y-1">
+          <span className="font-bold text-slate-900 block leading-tight">
+            {log.identificadorEntidade}
+          </span>
+          <div className="flex items-center gap-1 text-[11px] font-mono text-slate-600">
+            <span className="text-[10px] uppercase font-bold text-slate-400">ID:</span>
+            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold border border-slate-200">
+              {log.recursoId || log.registroId}
+            </span>
+          </div>
+        </div>
+      </td>
+
+      {/* Usuário / Responsável */}
+      <td className="py-3 px-4 align-top">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 font-semibold text-slate-800 text-xs">
+            <UserCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+            <span>{log.nomeUsuario || log.fiscalResponsavel || log.usuario}</span>
+          </div>
+          {log.cargo && (
+            <span className="text-[11px] text-slate-500 font-medium block">
+              {log.cargo}
+            </span>
+          )}
+          {log.usuario && log.usuario !== log.nomeUsuario && (
+            <span className="text-[10px] text-slate-400 font-mono block">
+              {log.usuario}
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Detalhamento e Modificações */}
+      <td className="py-3 px-4 max-w-md align-top">
+        <p className="text-xs text-slate-700 leading-relaxed font-normal">
+          {log.detalhes}
+        </p>
+
+        {alteracoesLista.length > 0 && (
+          <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px] space-y-1">
+            <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wide">
+              Campos Alterados:
+            </span>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-600 font-mono text-[10px]">
+              {alteracoesLista.map((alt, idx) => (
+                <li key={idx} className="truncate">
+                  {alt}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+});
+
+LogRowItem.displayName = 'LogRowItem';
 
 export const LogsAuditoriaPage: React.FC = () => {
   const { logsAuditoria, recarregarDados, loading } = useVigiMinas();
@@ -37,10 +234,12 @@ export const LogsAuditoriaPage: React.FC = () => {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState<number>(10);
 
-  // Filtragem dos logs
+  // Memorização da filtragem dos logs
   const logsFiltrados = useMemo(() => {
+    const termo = busca.toLowerCase().trim();
+    const filtroFiscalLower = filtroFiscal.toLowerCase();
+
     return logsAuditoria.filter(log => {
-      const termo = busca.toLowerCase().trim();
       const matchBusca = !termo ||
         log.identificadorEntidade.toLowerCase().includes(termo) ||
         log.detalhes.toLowerCase().includes(termo) ||
@@ -64,131 +263,101 @@ export const LogsAuditoriaPage: React.FC = () => {
 
       const matchFiscal = filtroFiscal === 'todos' || 
         log.fiscalResponsavel.includes(filtroFiscal) ||
-        (log.nomeUsuario && log.nomeUsuario.toLowerCase().includes(filtroFiscal.toLowerCase())) ||
-        (log.usuario && log.usuario.toLowerCase().includes(filtroFiscal.toLowerCase()));
+        (log.nomeUsuario && log.nomeUsuario.toLowerCase().includes(filtroFiscalLower)) ||
+        (log.usuario && log.usuario.toLowerCase().includes(filtroFiscalLower));
 
       return matchBusca && matchOperacao && matchColecao && matchFiscal;
     });
   }, [logsAuditoria, busca, filtroOperacao, filtroColecao, filtroFiscal]);
 
-  // Resetar para a primeira página quando os filtros mudam
+  // Reiniciar a paginação para a página 1 ao alterar filtros
   useEffect(() => {
     setPaginaAtual(1);
   }, [busca, filtroOperacao, filtroColecao, filtroFiscal, itensPorPagina]);
 
-  // Cálculos de Paginação
-  const totalPaginas = Math.max(1, Math.ceil(logsFiltrados.length / itensPorPagina));
-  const indiceInicio = (paginaAtual - 1) * itensPorPagina;
-  const indiceFim = Math.min(indiceInicio + itensPorPagina, logsFiltrados.length);
+  // Cálculos de Paginação Memorizados
+  const totalPaginas = useMemo(() => {
+    return Math.max(1, Math.ceil(logsFiltrados.length / itensPorPagina));
+  }, [logsFiltrados.length, itensPorPagina]);
+
+  const indiceInicio = useMemo(() => {
+    return (paginaAtual - 1) * itensPorPagina;
+  }, [paginaAtual, itensPorPagina]);
+
+  const indiceFim = useMemo(() => {
+    return Math.min(indiceInicio + itensPorPagina, logsFiltrados.length);
+  }, [indiceInicio, itensPorPagina, logsFiltrados.length]);
 
   const logsPaginados = useMemo(() => {
     return logsFiltrados.slice(indiceInicio, indiceFim);
   }, [logsFiltrados, indiceInicio, indiceFim]);
 
-  const totalCreates = logsAuditoria.filter(l => l.operacao === 'create' || l.acao === 'Criação').length;
-  const totalUpdates = logsAuditoria.filter(l => l.operacao === 'update' || l.acao === 'Edição' || l.acao === 'Inspeção Rápida').length;
-  const totalDeletes = logsAuditoria.filter(l => l.operacao === 'delete' || l.acao === 'Exclusão').length;
+  // Contadores globais das operações auditadas
+  const { totalCreates, totalUpdates, totalDeletes } = useMemo(() => {
+    let creates = 0;
+    let updates = 0;
+    let deletes = 0;
 
-  const formatarDataHora = (iso: string) => {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-    } catch {
-      return iso;
+    for (let i = 0; i < logsAuditoria.length; i++) {
+      const l = logsAuditoria[i];
+      if (l.operacao === 'create' || l.acao === 'Criação') creates++;
+      else if (l.operacao === 'update' || l.acao === 'Edição' || l.acao === 'Inspeção Rápida') updates++;
+      else if (l.operacao === 'delete' || l.acao === 'Exclusão') deletes++;
     }
-  };
 
-  const getOperacaoBadge = (operacao?: OperacaoFirestore, acao?: AcaoAuditoria) => {
-    const op = operacao || (acao === 'Criação' ? 'create' : acao === 'Exclusão' ? 'delete' : acao === 'Exportação' ? 'export' : 'update');
-    switch (op) {
-      case 'create':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-900 border border-emerald-300">
-            <CheckCircle2 className="w-3 h-3 text-emerald-700" strokeWidth={2.5} />
-            CREATE
-          </span>
-        );
-      case 'update':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-blue-100 text-blue-900 border border-blue-300">
-            <Tag className="w-3 h-3 text-blue-700" strokeWidth={2.5} />
-            UPDATE
-          </span>
-        );
-      case 'delete':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-rose-100 text-rose-950 border border-rose-300">
-            <AlertCircle className="w-3 h-3 text-rose-700" strokeWidth={2.5} />
-            DELETE
-          </span>
-        );
-      case 'export':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-purple-100 text-purple-900 border border-purple-300">
-            <Database className="w-3 h-3 text-purple-700" strokeWidth={2.5} />
-            EXPORT
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-900 border border-slate-300">
-            LOG
-          </span>
-        );
-    }
-  };
+    return { totalCreates: creates, totalUpdates: updates, totalDeletes: deletes };
+  }, [logsAuditoria]);
 
-  const getColecaoBadge = (colecao?: ColecaoAuditada, tipo?: string) => {
-    const col = colecao || (tipo === 'InspecaoVapt' ? 'inspecoes_vapt' : tipo === 'ExportacaoBackup' ? 'backups_exportados' : 'estabelecimentos');
-    if (col === 'estabelecimentos') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-800 border border-slate-300">
-          <Building2 className="w-3 h-3 text-slate-600" />
-          estabelecimentos
-        </span>
-      );
-    }
-    if (col === 'backups_exportados') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-900 border border-purple-200">
-          <Database className="w-3 h-3 text-purple-700" />
-          backups_exportados
-        </span>
-      );
-    }
-    if (col === 'configuracoes_sistema') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-900 border border-amber-300">
-          <Sliders className="w-3 h-3 text-amber-700" />
-          configuracoes_sistema
-        </span>
-      );
-    }
-    if (col === 'usuarios') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-900 border border-indigo-200">
-          <UsersIcon className="w-3 h-3 text-indigo-700" />
-          usuarios
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-teal-50 text-teal-900 border border-teal-200">
-        <HardHat className="w-3 h-3 text-teal-700" />
-        inspecoes_vapt
-      </span>
-    );
-  };
+  // Handlers Memorizados via useCallback
+  const handleBuscaChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusca(e.target.value);
+  }, []);
+
+  const handleOperacaoChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFiltroOperacao(e.target.value);
+  }, []);
+
+  const handleColecaoChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFiltroColecao(e.target.value);
+  }, []);
+
+  const handleFiscalChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFiltroFiscal(e.target.value);
+  }, []);
+
+  const handleItensPorPaginaChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItensPorPagina(Number(e.target.value));
+  }, []);
+
+  const handleLimparFiltros = useCallback(() => {
+    setBusca('');
+    setFiltroOperacao('todas');
+    setFiltroColecao('todas');
+    setFiltroFiscal('todos');
+  }, []);
+
+  const handlePrimeiraPagina = useCallback(() => {
+    setPaginaAtual(1);
+  }, []);
+
+  const handlePaginaAnterior = useCallback(() => {
+    setPaginaAtual(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const handleProximaPagina = useCallback(() => {
+    setPaginaAtual(prev => Math.min(totalPaginas, prev + 1));
+  }, [totalPaginas]);
+
+  const handleUltimaPagina = useCallback(() => {
+    setPaginaAtual(totalPaginas);
+  }, [totalPaginas]);
+
+  const handleIrParaPagina = useCallback((num: number) => {
+    setPaginaAtual(num);
+  }, []);
 
   // Geração de números de página com janela deslizante
-  const getPageNumbers = () => {
+  const pageNumbers = useMemo(() => {
     const maxVisible = 5;
     const pages: number[] = [];
     let start = Math.max(1, paginaAtual - Math.floor(maxVisible / 2));
@@ -202,7 +371,7 @@ export const LogsAuditoriaPage: React.FC = () => {
       pages.push(i);
     }
     return pages;
-  };
+  }, [paginaAtual, totalPaginas]);
 
   return (
     <div className="space-y-6">
@@ -230,10 +399,12 @@ export const LogsAuditoriaPage: React.FC = () => {
           <button
             onClick={() => recarregarDados()}
             disabled={loading}
-            className="min-h-[44px] px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-2 cursor-pointer border border-slate-700"
+            aria-busy={loading}
+            aria-label="Atualizar Logs de Auditoria"
+            className="min-h-[44px] px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-2 cursor-pointer border border-slate-700 disabled:opacity-50"
           >
-            <Clock className="w-4 h-4 text-emerald-400" />
-            <span>Atualizar Logs</span>
+            <Clock className={`w-4 h-4 text-emerald-400 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Atualizando...' : 'Atualizar Logs'}</span>
           </button>
         </div>
       </div>
@@ -281,17 +452,21 @@ export const LogsAuditoriaPage: React.FC = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
+              id="input-busca-logs"
+              aria-label="Buscar eventos de auditoria"
               placeholder="Buscar por ID, razão social, termo VAPT, usuário ou fiscal..."
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              onChange={handleBuscaChange}
               className="w-full h-11 pl-9 pr-4 text-xs rounded-lg border border-slate-300 focus:border-emerald-600 outline-none text-slate-800"
             />
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <select
+              id="select-filtro-operacao"
+              aria-label="Filtrar por operação"
               value={filtroOperacao}
-              onChange={(e) => setFiltroOperacao(e.target.value)}
+              onChange={handleOperacaoChange}
               className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
             >
               <option value="todas">Todas Operações (create/update/delete)</option>
@@ -301,8 +476,10 @@ export const LogsAuditoriaPage: React.FC = () => {
             </select>
 
             <select
+              id="select-filtro-colecao"
+              aria-label="Filtrar por coleção"
               value={filtroColecao}
-              onChange={(e) => setFiltroColecao(e.target.value)}
+              onChange={handleColecaoChange}
               className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
             >
               <option value="todas">Todas as Coleções</option>
@@ -313,8 +490,10 @@ export const LogsAuditoriaPage: React.FC = () => {
             </select>
 
             <select
+              id="select-filtro-fiscal"
+              aria-label="Filtrar por fiscal ou usuário"
               value={filtroFiscal}
-              onChange={(e) => setFiltroFiscal(e.target.value)}
+              onChange={handleFiscalChange}
               className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
             >
               <option value="todos">Todos Fiscais / Usuários</option>
@@ -334,10 +513,12 @@ export const LogsAuditoriaPage: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-slate-600 font-medium">Registros por página:</span>
+              <label htmlFor="select-itens-por-pagina" className="text-[11px] text-slate-600 font-medium">Registros por página:</label>
               <select
+                id="select-itens-por-pagina"
+                aria-label="Registros por página"
                 value={itensPorPagina}
-                onChange={(e) => setItensPorPagina(Number(e.target.value))}
+                onChange={handleItensPorPaginaChange}
                 className="h-8 px-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold cursor-pointer outline-none"
               >
                 <option value={10}>10</option>
@@ -349,12 +530,8 @@ export const LogsAuditoriaPage: React.FC = () => {
 
             {(busca || filtroOperacao !== 'todas' || filtroColecao !== 'todas' || filtroFiscal !== 'todos') && (
               <button
-                onClick={() => {
-                  setBusca('');
-                  setFiltroOperacao('todas');
-                  setFiltroColecao('todas');
-                  setFiltroFiscal('todos');
-                }}
+                type="button"
+                onClick={handleLimparFiltros}
                 className="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer underline text-[11px]"
               >
                 Limpar filtros
@@ -388,94 +565,7 @@ export const LogsAuditoriaPage: React.FC = () => {
                 </tr>
               ) : (
                 logsPaginados.map(log => (
-                  <tr key={log.id} className="hover:bg-slate-50/80 transition">
-                    
-                    {/* Timestamp */}
-                    <td className="py-3 px-4 whitespace-nowrap align-top">
-                      <div className="flex items-center gap-1.5 font-mono text-slate-700 text-[11px]">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>{formatarDataHora(log.timestamp)}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
-                        Log: {log.id.slice(0, 16)}...
-                      </span>
-                    </td>
-
-                    {/* Operação e Coleção */}
-                    <td className="py-3 px-4 whitespace-nowrap align-top">
-                      <div className="flex flex-col gap-1.5">
-                        <div>{getOperacaoBadge(log.operacao, log.acao)}</div>
-                        <div>{getColecaoBadge(log.colecao, log.tipoRegistro)}</div>
-                      </div>
-                    </td>
-
-                    {/* Recurso ID e Entidade */}
-                    <td className="py-3 px-4 align-top">
-                      <div className="space-y-1">
-                        <span className="font-bold text-slate-900 block leading-tight">
-                          {log.identificadorEntidade}
-                        </span>
-                        <div className="flex items-center gap-1 text-[11px] font-mono text-slate-600">
-                          <span className="text-[10px] uppercase font-bold text-slate-400">ID:</span>
-                          <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold border border-slate-200">
-                            {log.recursoId || log.registroId}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Usuário / Responsável */}
-                    <td className="py-3 px-4 align-top">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 font-semibold text-slate-800 text-xs">
-                          <UserCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                          <span>{log.nomeUsuario || log.fiscalResponsavel || log.usuario}</span>
-                        </div>
-                        {log.cargo && (
-                          <span className="text-[11px] text-slate-500 font-medium block">
-                            {log.cargo}
-                          </span>
-                        )}
-                        {log.usuario && log.usuario !== log.nomeUsuario && (
-                          <span className="text-[10px] text-slate-400 font-mono block">
-                            {log.usuario}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Detalhamento e Modificações */}
-                    <td className="py-3 px-4 max-w-md align-top">
-                      <p className="text-xs text-slate-700 leading-relaxed font-normal">
-                        {log.detalhes}
-                      </p>
-                      
-                      {/* Diffs / Alterações detalhadas quando presentes */}
-                      {log.alteracoes && (
-                        (() => {
-                          const alteracoesLista = Array.isArray(log.alteracoes) 
-                            ? log.alteracoes 
-                            : (typeof log.alteracoes === 'string' ? [log.alteracoes] : []);
-                          if (alteracoesLista.length === 0) return null;
-                          return (
-                            <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px] space-y-1">
-                              <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wide">
-                                Campos Alterados:
-                              </span>
-                              <ul className="list-disc list-inside space-y-0.5 text-slate-600 font-mono text-[10px]">
-                                {alteracoesLista.map((alt, idx) => (
-                                  <li key={idx} className="truncate">
-                                    {alt}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          );
-                        })()
-                      )}
-                    </td>
-
-                  </tr>
+                  <LogRowItem key={log.id} log={log} />
                 ))
               )}
             </tbody>
@@ -489,12 +579,13 @@ export const LogsAuditoriaPage: React.FC = () => {
               Página <strong>{paginaAtual}</strong> de <strong>{totalPaginas}</strong> (Total: {logsFiltrados.length} registros)
             </span>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" role="navigation" aria-label="Navegação de Páginas">
               {/* Botão Primeira Página */}
               <button
                 type="button"
-                onClick={() => setPaginaAtual(1)}
+                onClick={handlePrimeiraPagina}
                 disabled={paginaAtual === 1}
+                aria-label="Primeira Página"
                 title="Primeira Página"
                 className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
               >
@@ -504,8 +595,9 @@ export const LogsAuditoriaPage: React.FC = () => {
               {/* Botão Página Anterior */}
               <button
                 type="button"
-                onClick={() => setPaginaAtual(prev => Math.max(1, prev - 1))}
+                onClick={handlePaginaAnterior}
                 disabled={paginaAtual === 1}
+                aria-label="Página Anterior"
                 title="Página Anterior"
                 className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
               >
@@ -514,11 +606,13 @@ export const LogsAuditoriaPage: React.FC = () => {
 
               {/* Números de Página */}
               <div className="flex items-center gap-1 mx-1">
-                {getPageNumbers().map(num => (
+                {pageNumbers.map(num => (
                   <button
                     key={num}
                     type="button"
-                    onClick={() => setPaginaAtual(num)}
+                    onClick={() => handleIrParaPagina(num)}
+                    aria-label={`Página ${num}`}
+                    aria-current={paginaAtual === num ? 'page' : undefined}
                     className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                       paginaAtual === num
                         ? 'bg-emerald-600 text-white shadow-2xs'
@@ -533,8 +627,9 @@ export const LogsAuditoriaPage: React.FC = () => {
               {/* Botão Próxima Página */}
               <button
                 type="button"
-                onClick={() => setPaginaAtual(prev => Math.min(totalPaginas, prev + 1))}
+                onClick={handleProximaPagina}
                 disabled={paginaAtual === totalPaginas}
+                aria-label="Próxima Página"
                 title="Próxima Página"
                 className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
               >
@@ -544,8 +639,9 @@ export const LogsAuditoriaPage: React.FC = () => {
               {/* Botão Última Página */}
               <button
                 type="button"
-                onClick={() => setPaginaAtual(totalPaginas)}
+                onClick={handleUltimaPagina}
                 disabled={paginaAtual === totalPaginas}
+                aria-label="Última Página"
                 title="Última Página"
                 className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
               >

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   Building2, 
   Search, 
@@ -49,6 +49,376 @@ interface EstabelecimentosListProps {
   onVerCalendario?: () => void;
 }
 
+const RiscoBadge = React.memo<{ risco: NivelRisco }>(({ risco }) => {
+  switch (risco) {
+    case 'Risco I':
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">Risco I</span>;
+    case 'Risco II':
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">Risco II</span>;
+    case 'Risco III':
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-950 border border-rose-300">Risco III</span>;
+  }
+});
+RiscoBadge.displayName = 'RiscoBadge';
+
+const AlvaraBadge = React.memo<{ alvara: SituacaoAlvara }>(({ alvara }) => {
+  switch (alvara) {
+    case 'Válido':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-200">
+          <CheckCircle2 className="w-3 h-3 text-emerald-700" strokeWidth={2.5} />
+          Válido
+        </span>
+      );
+    case 'Vencido':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-900 border border-rose-200">
+          <XCircle className="w-3 h-3 text-rose-700" strokeWidth={2.5} />
+          Vencido
+        </span>
+      );
+    case 'Isento/Dispensado':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-100 text-sky-900 border border-sky-200">
+          <CheckCircle2 className="w-3 h-3 text-sky-700" strokeWidth={2.5} />
+          Dispensado
+        </span>
+      );
+    case 'Não Possui (Irregular)':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-950 border border-amber-400">
+          <AlertTriangle className="w-3 h-3 text-amber-700" strokeWidth={2.5} />
+          Não Possui (Irregular)
+        </span>
+      );
+  }
+});
+AlvaraBadge.displayName = 'AlvaraBadge';
+
+// Subcomponente Puro memorizado para linha de estabelecimento arquivado
+interface EstabelecimentoArchivedTableRowProps {
+  est: Estabelecimento;
+  onRestaurarEstabelecimento?: (id: string, razao: string) => void;
+  onExcluirPermanente?: (id: string, razao: string, cnpj?: string) => void;
+}
+
+const EstabelecimentoArchivedTableRow: React.FC<EstabelecimentoArchivedTableRowProps> = React.memo(({
+  est,
+  onRestaurarEstabelecimento,
+  onExcluirPermanente
+}) => {
+  const handleRestaurar = useCallback(() => {
+    if (onRestaurarEstabelecimento) {
+      onRestaurarEstabelecimento(est.id, est.razaoSocial);
+    }
+  }, [onRestaurarEstabelecimento, est.id, est.razaoSocial]);
+
+  const handleExcluirPermanente = useCallback(() => {
+    if (onExcluirPermanente) {
+      onExcluirPermanente(est.id, est.razaoSocial, est.cnpjCpf);
+    }
+  }, [onExcluirPermanente, est.id, est.razaoSocial, est.cnpjCpf]);
+
+  return (
+    <tr className="hover:bg-amber-50/40 bg-amber-50/20 text-slate-700 transition duration-100">
+      {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
+      <td className="py-3 px-4">
+        <span className="font-bold text-slate-900 text-xs block">
+          {est.nomeFantasia || est.razaoSocial}
+        </span>
+        {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
+          <span className="text-[11px] text-slate-500 block truncate max-w-xs" title={est.razaoSocial}>
+            {est.razaoSocial}
+          </span>
+        ) : (
+          <span className="text-[11px] text-slate-400 italic block truncate max-w-xs" title="Razão Social">
+            Razão: {est.razaoSocial}
+          </span>
+        )}
+        <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
+          <span className="font-mono bg-white px-1 py-0.2 rounded border border-amber-200 text-amber-900">
+            {est.cnpjCpf}
+          </span>
+          {est.identificacaoMunicipal && (
+            <span className="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200 text-[10px]" title="Identificação Municipal">
+              IM: {est.identificacaoMunicipal}
+            </span>
+          )}
+          <span>• {est.endereco.bairro}</span>
+        </div>
+      </td>
+
+      {/* CNAE */}
+      <td className="py-3 px-4 max-w-xs">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-mono font-semibold text-slate-700 text-[11px]">
+            {est.cnaeCodigo}
+          </span>
+          {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"
+              title={`CNAEs Secundários:\n${est.cnaesSecundarios.join('\n')}`}
+            >
+              +{est.cnaesSecundarios.length} sec.
+            </span>
+          )}
+        </div>
+        <span className="text-slate-600 text-[11px] line-clamp-2" title={est.cnaeDescricao}>
+          {est.cnaeDescricao}
+        </span>
+      </td>
+
+      {/* Risco */}
+      <td className="py-3 px-4">
+        <RiscoBadge risco={est.nivelRisco} />
+      </td>
+
+      {/* Justificativa do Arquivamento */}
+      <td className="py-3 px-4 max-w-xs">
+        <div className="p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-950 text-[11px]">
+          <span className="font-bold text-[10px] uppercase block text-amber-800">Motivo:</span>
+          <p className="line-clamp-2 mt-0.5">{est.motivoExclusao || 'Encerramento de atividades / Arquivado'}</p>
+        </div>
+      </td>
+
+      {/* Data e Operador */}
+      <td className="py-3 px-4 text-xs text-slate-600">
+        <span className="font-bold text-slate-800 block text-[11px]">
+          {est.deletedAt ? formatarDataBr(est.deletedAt.split('T')[0]) : '-'}
+        </span>
+        <span className="text-[10px] text-slate-500 block truncate max-w-[140px]" title={est.deletedBy}>
+          Por: {est.deletedBy || 'Fiscal VISA'}
+        </span>
+      </td>
+
+      {/* Ações: Restaurar e Excluir */}
+      <td className="py-3 px-4 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={handleRestaurar}
+            title="Restaurar cadastro para a base ativa"
+            className="min-h-[44px] px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Restaurar</span>
+          </button>
+
+          {onExcluirPermanente && (
+            <button
+              type="button"
+              onClick={handleExcluirPermanente}
+              title="Excluir estabelecimento"
+              className="min-h-[44px] px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Excluir</span>
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+});
+EstabelecimentoArchivedTableRow.displayName = 'EstabelecimentoArchivedTableRow';
+
+// Subcomponente Puro memorizado para linha de estabelecimento ativo em Tabela
+interface EstabelecimentoTableRowProps {
+  est: Estabelecimento;
+  onEditarEstabelecimento: (est: Estabelecimento) => void;
+  onExcluirEstabelecimento: (id: string, razao: string) => void;
+  onRegistrarInspecaoRapida: (est: Estabelecimento) => void;
+  onCriarVaptVinculada: (est: Estabelecimento) => void;
+}
+
+const EstabelecimentoTableRow: React.FC<EstabelecimentoTableRowProps> = React.memo(({
+  est,
+  onEditarEstabelecimento,
+  onExcluirEstabelecimento,
+  onRegistrarInspecaoRapida,
+  onCriarVaptVinculada
+}) => {
+  const isInspecionado2026 = useMemo(() => {
+    return (est.dataUltimaInspecaoInicio && est.dataUltimaInspecaoInicio.startsWith('2026')) ||
+      (est.dataUltimaInspecaoFim && est.dataUltimaInspecaoFim.startsWith('2026'));
+  }, [est.dataUltimaInspecaoInicio, est.dataUltimaInspecaoFim]);
+
+  const handleRegistrarInspecao = useCallback(() => {
+    onRegistrarInspecaoRapida(est);
+  }, [onRegistrarInspecaoRapida, est]);
+
+  const handleCriarVapt = useCallback(() => {
+    onCriarVaptVinculada(est);
+  }, [onCriarVaptVinculada, est]);
+
+  const handleEditar = useCallback(() => {
+    onEditarEstabelecimento(est);
+  }, [onEditarEstabelecimento, est]);
+
+  const handleExcluir = useCallback(() => {
+    onExcluirEstabelecimento(est.id, est.razaoSocial);
+  }, [onExcluirEstabelecimento, est.id, est.razaoSocial]);
+
+  return (
+    <tr className={`hover:bg-slate-50/70 transition duration-100 ${
+      est.situacaoEstabelecimento === 'Inativo' ? 'bg-slate-50/40 text-slate-500' : ''
+    }`}>
+      {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
+      <td className="py-3 px-4">
+        <span className="font-bold text-slate-900 text-xs block">
+          {est.nomeFantasia || est.razaoSocial}
+        </span>
+        {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
+          <span className="text-[11px] text-slate-500 block truncate max-w-xs" title={est.razaoSocial}>
+            {est.razaoSocial}
+          </span>
+        ) : (
+          <span className="text-[11px] text-slate-400 italic block truncate max-w-xs" title="Razão Social">
+            Razão: {est.razaoSocial}
+          </span>
+        )}
+        <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
+          <span className="font-mono bg-slate-100 px-1 py-0.2 rounded text-slate-700">
+            {est.cnpjCpf}
+          </span>
+          {est.identificacaoMunicipal && (
+            <span className="font-mono bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200 text-[10px] font-semibold" title="Identificação Municipal">
+              IM: {est.identificacaoMunicipal}
+            </span>
+          )}
+          <span>• {est.endereco.bairro}</span>
+        </div>
+      </td>
+
+      {/* CNAE */}
+      <td className="py-3 px-4 max-w-xs">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-mono font-semibold text-slate-700 text-[11px]">
+            {est.cnaeCodigo}
+          </span>
+          {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
+              title={`CNAEs Secundários:\n${est.cnaesSecundarios.join('\n')}`}
+            >
+              +{est.cnaesSecundarios.length} sec.
+            </span>
+          )}
+        </div>
+        <span className="text-slate-600 text-[11px] line-clamp-2" title={est.cnaeDescricao}>
+          {est.cnaeDescricao}
+        </span>
+      </td>
+
+      {/* Risco */}
+      <td className="py-3 px-4">
+        <div className="space-y-1">
+          <div><RiscoBadge risco={est.nivelRisco} /></div>
+          <div><AlvaraBadge alvara={est.situacaoAlvara} /></div>
+        </div>
+      </td>
+
+      {/* Inspeção */}
+      <td className="py-3 px-4">
+        <div className="space-y-0.5">
+          <span className="font-medium text-slate-800 text-[11px] block">
+            {est.dataUltimaInspecaoInicio ? formatarDataBr(est.dataUltimaInspecaoInicio) : 'Não inspecionado'}
+          </span>
+          {isInspecionado2026 ? (
+            <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              Exercício 2026
+            </span>
+          ) : (
+            <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
+              Pendente 2026
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Situação */}
+      <td className="py-3 px-4">
+        {est.situacaoEstabelecimento === 'Ativo' ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            Ativo
+          </span>
+        ) : est.situacaoEstabelecimento === 'Suspenso' ? (
+          <div className="space-y-0.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-950 border border-amber-300">
+              <AlertTriangle className="w-3 h-3 text-amber-700" />
+              Suspenso (Interditado)
+            </span>
+            {est.observacoesBaixa && (
+              <p className="text-[10px] text-amber-800 italic max-w-[170px] line-clamp-2" title={est.observacoesBaixa}>
+                {est.observacoesBaixa}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-800 border border-slate-300">
+              Inativo (Baixado)
+            </span>
+            {est.observacoesBaixa && (
+              <p className="text-[10px] text-slate-500 italic max-w-[170px] line-clamp-2" title={est.observacoesBaixa}>
+                {est.observacoesBaixa}
+              </p>
+            )}
+          </div>
+        )}
+      </td>
+
+      {/* Ações com Touch Targets de 44x44px */}
+      <td className="py-3 px-4 text-right">
+        <div className="inline-flex items-center gap-1 justify-end">
+
+          <button
+            type="button"
+            onClick={handleRegistrarInspecao}
+            title="Registrar Inspeção Sanitária (Alimenta Indicadores 13, 14 ou 15)"
+            aria-label="Registrar Inspeção Sanitária"
+            className="min-w-[44px] min-h-[44px] rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition flex items-center justify-center cursor-pointer border border-emerald-200/80 active:scale-95"
+          >
+            <ClipboardCheck className="w-4 h-4" strokeWidth={2} />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCriarVapt}
+            title="Lançar Vistoria VAPT (Indicador 11)"
+            aria-label="Lançar Vistoria VAPT"
+            className="min-w-[44px] min-h-[44px] rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 transition flex items-center justify-center cursor-pointer border border-teal-200/80 active:scale-95"
+          >
+            <HardHat className="w-4 h-4" strokeWidth={2} />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleEditar}
+            title="Editar Dados Cadastrais"
+            aria-label="Editar Dados Cadastrais"
+            className="min-w-[44px] min-h-[44px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center cursor-pointer active:scale-95"
+          >
+            <Edit3 className="w-4 h-4" strokeWidth={2} />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExcluir}
+            title="Excluir Registro (Soft Delete)"
+            aria-label="Excluir Registro"
+            className="min-w-[44px] min-h-[44px] rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition flex items-center justify-center cursor-pointer active:scale-95"
+          >
+            <Trash2 className="w-4 h-4" strokeWidth={2} />
+          </button>
+
+        </div>
+      </td>
+    </tr>
+  );
+});
+EstabelecimentoTableRow.displayName = 'EstabelecimentoTableRow';
+
 export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
   estabelecimentos,
   onNovoEstabelecimento,
@@ -76,25 +446,27 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
   const totalAtivos = useMemo(() => estabelecimentos.filter(e => !e.isDeleted).length, [estabelecimentos]);
   const totalArquivados = useMemo(() => estabelecimentos.filter(e => e.isDeleted && !e.isPermanentlyDeleted).length, [estabelecimentos]);
 
-  // Filtragem
+  // Filtragem Memorizada
   const filtrados = useMemo(() => {
+    const termo = busca.toLowerCase().trim();
+    const termoLimpo = termo.replace(/\D/g, '');
+
     return estabelecimentos.filter((est) => {
-      // Separação estrita entre ativos e arquivados (ocultando excluídos da visão do usuário)
+      // Separação estrita entre ativos e arquivados
       if (abaExibicao === 'ativos' && est.isDeleted) return false;
       if (abaExibicao === 'arquivados' && (!est.isDeleted || est.isPermanentlyDeleted)) return false;
 
-      const termo = busca.toLowerCase().trim();
       const matchBusca = !termo || 
         est.razaoSocial.toLowerCase().includes(termo) ||
         (est.nomeFantasia && est.nomeFantasia.toLowerCase().includes(termo)) ||
         (est.identificacaoMunicipal && est.identificacaoMunicipal.toLowerCase().includes(termo)) ||
-        est.cnpjCpf.replace(/\D/g, '').includes(termo.replace(/\D/g, '')) ||
+        (termoLimpo && est.cnpjCpf.replace(/\D/g, '').includes(termoLimpo)) ||
         est.cnaeCodigo.toLowerCase().includes(termo) ||
         est.cnaeDescricao.toLowerCase().includes(termo) ||
         (est.cnaesSecundarios && est.cnaesSecundarios.some(c => c.toLowerCase().includes(termo))) ||
         (est.motivoExclusao && est.motivoExclusao.toLowerCase().includes(termo)) ||
         (est.deletedBy && est.deletedBy.toLowerCase().includes(termo)) ||
-        est.endereco.bairro.toLowerCase().includes(termo);
+        (est.endereco?.bairro && est.endereco.bairro.toLowerCase().includes(termo));
 
       if (abaExibicao === 'arquivados') {
         return matchBusca;
@@ -121,58 +493,54 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
     setPaginaAtual(1);
   }, [busca, filtroRisco, filtroAlvara, filtroStatus, filtroInspecionado2026, abaExibicao]);
 
-  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / ITENS_POR_PAGINA));
-  const paginaAjustada = Math.min(Math.max(1, paginaAtual), totalPaginas);
-  const indiceInicio = (paginaAjustada - 1) * ITENS_POR_PAGINA;
-  const indiceFim = Math.min(indiceInicio + ITENS_POR_PAGINA, filtrados.length);
+  const totalPaginas = useMemo(() => {
+    return Math.max(1, Math.ceil(filtrados.length / ITENS_POR_PAGINA));
+  }, [filtrados.length, ITENS_POR_PAGINA]);
+
+  const paginaAjustada = useMemo(() => {
+    return Math.min(Math.max(1, paginaAtual), totalPaginas);
+  }, [paginaAtual, totalPaginas]);
+
+  const indiceInicio = useMemo(() => {
+    return (paginaAjustada - 1) * ITENS_POR_PAGINA;
+  }, [paginaAjustada, ITENS_POR_PAGINA]);
+
+  const indiceFim = useMemo(() => {
+    return Math.min(indiceInicio + ITENS_POR_PAGINA, filtrados.length);
+  }, [indiceInicio, ITENS_POR_PAGINA, filtrados.length]);
 
   const estabelecimentosPaginados = useMemo(() => {
     return filtrados.slice(indiceInicio, indiceFim);
   }, [filtrados, indiceInicio, indiceFim]);
 
-  const getRiscoBadge = (risco: NivelRisco) => {
-    switch (risco) {
-      case 'Risco I':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">Risco I</span>;
-      case 'Risco II':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">Risco II</span>;
-      case 'Risco III':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-950 border border-rose-300">Risco III</span>;
-    }
-  };
+  // Handlers Memorizados
+  const handleLimparFiltros = useCallback(() => {
+    setBusca('');
+    setFiltroRisco('todos');
+    setFiltroAlvara('todos');
+    setFiltroStatus('todos');
+    setFiltroInspecionado2026('todos');
+  }, []);
 
-  const getAlvaraBadge = (alvara: SituacaoAlvara) => {
-    switch (alvara) {
-      case 'Válido':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 text-emerald-700" strokeWidth={2.5} />
-            Válido
-          </span>
-        );
-      case 'Vencido':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-900 border border-rose-200">
-            <XCircle className="w-3 h-3 text-rose-700" strokeWidth={2.5} />
-            Vencido
-          </span>
-        );
-      case 'Isento/Dispensado':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-100 text-sky-900 border border-sky-200">
-            <CheckCircle2 className="w-3 h-3 text-sky-700" strokeWidth={2.5} />
-            Dispensado
-          </span>
-        );
-      case 'Não Possui (Irregular)':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-950 border border-amber-400">
-            <AlertTriangle className="w-3 h-3 text-amber-700" strokeWidth={2.5} />
-            Não Possui (Irregular)
-          </span>
-        );
-    }
-  };
+  const handleIrParaPrimeiraPagina = useCallback(() => {
+    setPaginaAtual(1);
+  }, []);
+
+  const handleIrParaPaginaAnterior = useCallback(() => {
+    setPaginaAtual(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const handleIrParaProximaPagina = useCallback(() => {
+    setPaginaAtual(prev => Math.min(totalPaginas, prev + 1));
+  }, [totalPaginas]);
+
+  const handleIrParaUltimaPagina = useCallback(() => {
+    setPaginaAtual(totalPaginas);
+  }, [totalPaginas]);
+
+  const handleIrParaPagina = useCallback((num: number) => {
+    setPaginaAtual(num);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -191,6 +559,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
+            type="button"
             onClick={onImportarPlanilha}
             className="min-h-[44px] px-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-950 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-emerald-300 shadow-2xs active:scale-[0.98]"
           >
@@ -200,6 +569,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
 
           {onVerCalendario && (
             <button
+              type="button"
               onClick={onVerCalendario}
               className="min-h-[44px] px-3.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-950 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-teal-300 shadow-2xs active:scale-[0.98]"
               title="Visualizar calendário de inspeções e agendar por arrastar e soltar"
@@ -210,6 +580,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           )}
 
           <button
+            type="button"
             onClick={() => onAbrirExportacao ? onAbrirExportacao(filtrados) : onExportExcel()}
             className="min-h-[44px] px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer border border-slate-300 active:scale-[0.98]"
             title="Exportar dados para CSV, XLSX ou XLS para backup e análise offline"
@@ -219,6 +590,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={onNovoEstabelecimento}
             className="min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
           >
@@ -233,6 +605,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
         <button
           type="button"
           onClick={() => setAbaExibicao('ativos')}
+          aria-label="Ver Cadastros Ativos"
           className={`min-h-[44px] px-4 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
             abaExibicao === 'ativos'
               ? 'bg-emerald-600 text-white shadow-xs'
@@ -251,6 +624,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
         <button
           type="button"
           onClick={() => setAbaExibicao('arquivados')}
+          aria-label="Ver Cadastros Arquivados"
           className={`min-h-[44px] px-4 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
             abaExibicao === 'arquivados'
               ? 'bg-amber-600 text-white shadow-xs'
@@ -278,6 +652,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
+              id="input-busca-estabelecimentos"
+              aria-label="Buscar estabelecimentos"
               placeholder={abaExibicao === 'ativos' 
                 ? "Buscar por Razão Social, Fantasia, CNPJ/CPF, CNAE ou Bairro..." 
                 : "Buscar em arquivados por Razão Social, CNPJ, motivo ou fiscal..."}
@@ -287,6 +663,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
             />
             {busca && (
               <button
+                type="button"
                 onClick={() => setBusca('')}
                 aria-label="Limpar busca"
                 className="w-8 h-8 absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 flex items-center justify-center cursor-pointer"
@@ -300,6 +677,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           {abaExibicao === 'ativos' && (
             <div className="flex items-center gap-2 flex-wrap">
               <select
+                id="select-filtro-risco"
+                aria-label="Filtrar por nível de risco"
                 value={filtroRisco}
                 onChange={(e) => setFiltroRisco(e.target.value)}
                 className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
@@ -311,6 +690,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
               </select>
 
               <select
+                id="select-filtro-alvara"
+                aria-label="Filtrar por situação do alvará"
                 value={filtroAlvara}
                 onChange={(e) => setFiltroAlvara(e.target.value)}
                 className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
@@ -323,6 +704,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
               </select>
 
               <select
+                id="select-filtro-status"
+                aria-label="Filtrar por situação cadastral"
                 value={filtroStatus}
                 onChange={(e) => setFiltroStatus(e.target.value)}
                 className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
@@ -334,6 +717,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
               </select>
 
               <select
+                id="select-filtro-inspecionado-2026"
+                aria-label="Filtrar por status de inspeção em 2026"
                 value={filtroInspecionado2026}
                 onChange={(e) => setFiltroInspecionado2026(e.target.value)}
                 className="h-11 text-xs px-3 rounded-lg border border-slate-300 bg-white text-slate-700 outline-none font-medium cursor-pointer"
@@ -358,13 +743,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           </span>
           {(busca || filtroRisco !== 'todos' || filtroAlvara !== 'todos' || filtroStatus !== 'todos' || filtroInspecionado2026 !== 'todos') && (
             <button
-              onClick={() => {
-                setBusca('');
-                setFiltroRisco('todos');
-                setFiltroAlvara('todos');
-                setFiltroStatus('todos');
-                setFiltroInspecionado2026('todos');
-              }}
+              type="button"
+              onClick={handleLimparFiltros}
               className="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer underline text-[11px]"
             >
               Limpar filtros
@@ -413,267 +793,24 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                 estabelecimentosPaginados.map((est) => {
                   if (abaExibicao === 'arquivados') {
                     return (
-                      <tr 
-                        key={est.id} 
-                        className="hover:bg-amber-50/40 bg-amber-50/20 text-slate-700 transition duration-100"
-                      >
-                        {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
-                        <td className="py-3 px-4">
-                          <span className="font-bold text-slate-900 text-xs block">
-                            {est.nomeFantasia || est.razaoSocial}
-                          </span>
-                          {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
-                            <span className="text-[11px] text-slate-500 block truncate max-w-xs" title={est.razaoSocial}>
-                              {est.razaoSocial}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-slate-400 italic block truncate max-w-xs" title="Razão Social">
-                              Razão: {est.razaoSocial}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
-                            <span className="font-mono bg-white px-1 py-0.2 rounded border border-amber-200 text-amber-900">
-                              {est.cnpjCpf}
-                            </span>
-                            {est.identificacaoMunicipal && (
-                              <span className="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200 text-[10px]" title="Identificação Municipal">
-                                IM: {est.identificacaoMunicipal}
-                              </span>
-                            )}
-                            <span>• {est.endereco.bairro}</span>
-                          </div>
-                        </td>
-
-                        {/* CNAE */}
-                        <td className="py-3 px-4 max-w-xs">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono font-semibold text-slate-700 text-[11px]">
-                              {est.cnaeCodigo}
-                            </span>
-                            {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
-                              <span 
-                                className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"
-                                title={`CNAEs Secundários:\n${est.cnaesSecundarios.join('\n')}`}
-                              >
-                                +{est.cnaesSecundarios.length} sec.
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-slate-600 text-[11px] line-clamp-2" title={est.cnaeDescricao}>
-                            {est.cnaeDescricao}
-                          </span>
-                        </td>
-
-                        {/* Risco */}
-                        <td className="py-3 px-4">
-                          {getRiscoBadge(est.nivelRisco)}
-                        </td>
-
-                        {/* Justificativa do Arquivamento */}
-                        <td className="py-3 px-4 max-w-xs">
-                          <div className="p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-950 text-[11px]">
-                            <span className="font-bold text-[10px] uppercase block text-amber-800">Motivo:</span>
-                            <p className="line-clamp-2 mt-0.5">{est.motivoExclusao || 'Encerramento de atividades / Arquivado'}</p>
-                          </div>
-                        </td>
-
-                        {/* Data e Operador */}
-                        <td className="py-3 px-4 text-xs text-slate-600">
-                          <span className="font-bold text-slate-800 block text-[11px]">
-                            {est.deletedAt ? formatarDataBr(est.deletedAt.split('T')[0]) : '-'}
-                          </span>
-                          <span className="text-[10px] text-slate-500 block truncate max-w-[140px]" title={est.deletedBy}>
-                            Por: {est.deletedBy || 'Fiscal VISA'}
-                          </span>
-                        </td>
-
-                        {/* Ações: Restaurar e Excluir */}
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => onRestaurarEstabelecimento && onRestaurarEstabelecimento(est.id, est.razaoSocial)}
-                              title="Restaurar cadastro para a base ativa"
-                              className="min-h-[44px] px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                              <span>Restaurar</span>
-                            </button>
-
-                            {onExcluirPermanente && (
-                              <button
-                                onClick={() => onExcluirPermanente(est.id, est.razaoSocial, est.cnpjCpf)}
-                                title="Excluir estabelecimento"
-                                className="min-h-[44px] px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                              >
-                                <Trash2 className="w-4 h-4 text-rose-600" />
-                                <span>Excluir</span>
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                      <EstabelecimentoArchivedTableRow
+                        key={est.id}
+                        est={est}
+                        onRestaurarEstabelecimento={onRestaurarEstabelecimento}
+                        onExcluirPermanente={onExcluirPermanente}
+                      />
                     );
                   }
 
-                  const isInspecionado2026 = 
-                    (est.dataUltimaInspecaoInicio && est.dataUltimaInspecaoInicio.startsWith('2026')) ||
-                    (est.dataUltimaInspecaoFim && est.dataUltimaInspecaoFim.startsWith('2026'));
-
                   return (
-                    <tr 
-                      key={est.id} 
-                      className={`hover:bg-slate-50/70 transition duration-100 ${
-                        est.situacaoEstabelecimento === 'Inativo' ? 'bg-slate-50/40 text-slate-500' : ''
-                      }`}
-                    >
-                      {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
-                      <td className="py-3 px-4">
-                        <span className="font-bold text-slate-900 text-xs block">
-                          {est.nomeFantasia || est.razaoSocial}
-                        </span>
-                        {est.nomeFantasia && est.nomeFantasia !== est.razaoSocial ? (
-                          <span className="text-[11px] text-slate-500 block truncate max-w-xs" title={est.razaoSocial}>
-                            {est.razaoSocial}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 italic block truncate max-w-xs" title="Razão Social">
-                            Razão: {est.razaoSocial}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
-                          <span className="font-mono bg-slate-100 px-1 py-0.2 rounded text-slate-700">
-                            {est.cnpjCpf}
-                          </span>
-                          {est.identificacaoMunicipal && (
-                            <span className="font-mono bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200 text-[10px] font-semibold" title="Identificação Municipal">
-                              IM: {est.identificacaoMunicipal}
-                            </span>
-                          )}
-                          <span>• {est.endereco.bairro}</span>
-                        </div>
-                      </td>
-
-                      {/* CNAE */}
-                      <td className="py-3 px-4 max-w-xs">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono font-semibold text-slate-700 text-[11px]">
-                            {est.cnaeCodigo}
-                          </span>
-                          {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
-                            <span 
-                              className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
-                              title={`CNAEs Secundários:\n${est.cnaesSecundarios.join('\n')}`}
-                            >
-                              +{est.cnaesSecundarios.length} sec.
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-slate-600 text-[11px] line-clamp-2" title={est.cnaeDescricao}>
-                          {est.cnaeDescricao}
-                        </span>
-                      </td>
-
-                      {/* Risco */}
-                      <td className="py-3 px-4">
-                        <div className="space-y-1">
-                          <div>{getRiscoBadge(est.nivelRisco)}</div>
-                          <div>{getAlvaraBadge(est.situacaoAlvara)}</div>
-                        </div>
-                      </td>
-
-                      {/* Inspeção */}
-                      <td className="py-3 px-4">
-                        <div className="space-y-0.5">
-                          <span className="font-medium text-slate-800 text-[11px] block">
-                            {est.dataUltimaInspecaoInicio ? formatarDataBr(est.dataUltimaInspecaoInicio) : 'Não inspecionado'}
-                          </span>
-                          {isInspecionado2026 ? (
-                            <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                              Exercício 2026
-                            </span>
-                          ) : (
-                            <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
-                              Pendente 2026
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Situação */}
-                      <td className="py-3 px-4">
-                        {est.situacaoEstabelecimento === 'Ativo' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            Ativo
-                          </span>
-                        ) : est.situacaoEstabelecimento === 'Suspenso' ? (
-                          <div className="space-y-0.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-950 border border-amber-300">
-                              <AlertTriangle className="w-3 h-3 text-amber-700" />
-                              Suspenso (Interditado)
-                            </span>
-                            {est.observacoesBaixa && (
-                              <p className="text-[10px] text-amber-800 italic max-w-[170px] line-clamp-2" title={est.observacoesBaixa}>
-                                {est.observacoesBaixa}
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="space-y-0.5">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-800 border border-slate-300">
-                              Inativo (Baixado)
-                            </span>
-                            {est.observacoesBaixa && (
-                              <p className="text-[10px] text-slate-500 italic max-w-[170px] line-clamp-2" title={est.observacoesBaixa}>
-                                {est.observacoesBaixa}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Ações com Touch Targets de 44x44px */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1 justify-end">
-                          
-                          <button
-                            onClick={() => onRegistrarInspecaoRapida(est)}
-                            title="Registrar Inspeção Sanitária (Alimenta Indicadores 13, 14 ou 15)"
-                            aria-label="Registrar Inspeção Sanitária"
-                            className="min-w-[44px] min-h-[44px] rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition flex items-center justify-center cursor-pointer border border-emerald-200/80 active:scale-95"
-                          >
-                            <ClipboardCheck className="w-4 h-4" strokeWidth={2} />
-                          </button>
-
-                          <button
-                            onClick={() => onCriarVaptVinculada(est)}
-                            title="Lançar Vistoria VAPT (Indicador 11)"
-                            aria-label="Lançar Vistoria VAPT"
-                            className="min-w-[44px] min-h-[44px] rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 transition flex items-center justify-center cursor-pointer border border-teal-200/80 active:scale-95"
-                          >
-                            <HardHat className="w-4 h-4" strokeWidth={2} />
-                          </button>
-
-                          <button
-                            onClick={() => onEditarEstabelecimento(est)}
-                            title="Editar Dados Cadastrais"
-                            aria-label="Editar Dados Cadastrais"
-                            className="min-w-[44px] min-h-[44px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center cursor-pointer active:scale-95"
-                          >
-                            <Edit3 className="w-4 h-4" strokeWidth={2} />
-                          </button>
-
-                          <button
-                            onClick={() => onExcluirEstabelecimento(est.id, est.razaoSocial)}
-                            title="Excluir Registro (Soft Delete)"
-                            aria-label="Excluir Registro"
-                            className="min-w-[44px] min-h-[44px] rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition flex items-center justify-center cursor-pointer active:scale-95"
-                          >
-                            <Trash2 className="w-4 h-4" strokeWidth={2} />
-                          </button>
-
-                        </div>
-                      </td>
-                    </tr>
+                    <EstabelecimentoTableRow
+                      key={est.id}
+                      est={est}
+                      onEditarEstabelecimento={onEditarEstabelecimento}
+                      onExcluirEstabelecimento={onExcluirEstabelecimento}
+                      onRegistrarInspecaoRapida={onRegistrarInspecaoRapida}
+                      onCriarVaptVinculada={onCriarVaptVinculada}
+                    />
                   );
                 })
               )}
@@ -682,7 +819,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
         </div>
       </div>
 
-      {/* Visualização Mobile: Cards Ergonomicamente Espaçados com Botões Touch de 44px */}
+      {/* Visualização Mobile: Cards Ergonomicamente Espaçados */}
       <div className="md:hidden space-y-3">
         {filtrados.length === 0 ? (
           <div className="bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-500">
@@ -727,7 +864,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                         <span>• {est.endereco.bairro}</span>
                       </div>
                     </div>
-                    {getRiscoBadge(est.nivelRisco)}
+                    <RiscoBadge risco={est.nivelRisco} />
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 space-y-1">
@@ -741,6 +878,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
+                      type="button"
                       onClick={() => onRestaurarEstabelecimento && onRestaurarEstabelecimento(est.id, est.razaoSocial)}
                       className="min-h-[44px] px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-97 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                     >
@@ -749,6 +887,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                     </button>
                     {onExcluirPermanente && (
                       <button
+                        type="button"
                         onClick={() => onExcluirPermanente(est.id, est.razaoSocial, est.cnpjCpf)}
                         className="min-h-[44px] px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 active:scale-97 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                       >
@@ -794,7 +933,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                       <span>• {est.endereco.bairro}</span>
                     </div>
                   </div>
-                  {getRiscoBadge(est.nivelRisco)}
+                  <RiscoBadge risco={est.nivelRisco} />
                 </div>
 
                 <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 space-y-1.5">
@@ -820,7 +959,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                     </div>
                   )}
                   <div className="flex items-center gap-2 flex-wrap pt-1">
-                    {getAlvaraBadge(est.situacaoAlvara)}
+                    <AlvaraBadge alvara={est.situacaoAlvara} />
                     {isInspecionado2026 ? (
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
                         Inspecionado 2026
@@ -852,6 +991,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                 {/* Grid de Botões de Ação para Celular com altura 44px */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
                   <button
+                    type="button"
                     onClick={() => onRegistrarInspecaoRapida(est)}
                     className="min-h-[44px] px-3 rounded-lg bg-emerald-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-97"
                   >
@@ -860,6 +1000,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => onCriarVaptVinculada(est)}
                     className="min-h-[44px] px-3 rounded-lg bg-teal-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-97"
                   >
@@ -868,6 +1009,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => onEditarEstabelecimento(est)}
                     className="min-h-[44px] px-3 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-97 border border-slate-200"
                   >
@@ -876,6 +1018,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => onExcluirEstabelecimento(est.id, est.razaoSocial)}
                     className="min-h-[44px] px-3 rounded-lg bg-rose-50 text-rose-700 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-97 border border-rose-200"
                   >
@@ -902,10 +1045,10 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           </div>
 
           {totalPaginas > 1 && (
-            <div className="flex items-center gap-1 flex-wrap justify-center">
+            <div className="flex items-center gap-1 flex-wrap justify-center" role="navigation" aria-label="Navegação de Páginas">
               <button
                 type="button"
-                onClick={() => setPaginaAtual(1)}
+                onClick={handleIrParaPrimeiraPagina}
                 disabled={paginaAjustada === 1}
                 aria-label="Primeira Página"
                 title="Primeira Página"
@@ -916,7 +1059,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
 
               <button
                 type="button"
-                onClick={() => setPaginaAtual(prev => Math.max(1, prev - 1))}
+                onClick={handleIrParaPaginaAnterior}
                 disabled={paginaAjustada === 1}
                 aria-label="Página Anterior"
                 title="Página Anterior"
@@ -941,7 +1084,9 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                       )}
                       <button
                         type="button"
-                        onClick={() => setPaginaAtual(num)}
+                        onClick={() => handleIrParaPagina(num)}
+                        aria-label={`Página ${num}`}
+                        aria-current={paginaAjustada === num ? 'page' : undefined}
                         className={`min-w-[40px] min-h-[40px] px-3 rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer ${
                           paginaAjustada === num
                             ? 'bg-emerald-600 text-white shadow-xs border border-emerald-600'
@@ -956,7 +1101,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
 
               <button
                 type="button"
-                onClick={() => setPaginaAtual(prev => Math.min(totalPaginas, prev + 1))}
+                onClick={handleIrParaProximaPagina}
                 disabled={paginaAjustada === totalPaginas}
                 aria-label="Próxima Página"
                 title="Próxima Página"
@@ -968,7 +1113,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
 
               <button
                 type="button"
-                onClick={() => setPaginaAtual(totalPaginas)}
+                onClick={handleIrParaUltimaPagina}
                 disabled={paginaAjustada === totalPaginas}
                 aria-label="Última Página"
                 title="Última Página"
