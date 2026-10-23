@@ -4,6 +4,10 @@ export type SituacaoAlvara = 'Válido' | 'Vencido' | 'Isento/Dispensado' | 'Não
 export type CompetenciaFiscalizacao = 'Municipal' | 'Estadual' | 'Pactuado';
 export type ParecerProjeto = 'Sim' | 'Não' | 'Não Aplicável';
 export type StatusInspecaoVapt = 'Concluída' | 'Em Acompanhamento';
+export type StatusExercicio = 'Em Andamento' | 'Homologado' | 'Encerrado';
+
+export type UserRole = 'admin_master' | 'fiscal_tecnico' | 'digitador';
+export type FuncaoUsuario = UserRole;
 
 export interface Endereco {
   logradouro: string;
@@ -121,7 +125,7 @@ export interface ConfiguracaoExercicio {
   metaInd15RiscoIII: number;
   dataInicioExercicio: string;
   dataTerminoExercicio: string;
-  statusExercicio: 'Em Andamento' | 'Homologado' | 'Encerrado';
+  statusExercicio: StatusExercicio;
 }
 
 export interface ConfiguracaoSistema {
@@ -162,20 +166,42 @@ export interface ResultadoExportacao {
   timestamp: string;
 }
 
-export type FuncaoUsuario = 'admin_master' | 'fiscal_tecnico' | 'digitador';
-
 export interface Usuario {
   id: string;
   username: string; // Login único (ex: Matheus)
   nomeCompleto: string; // Ex: Matheus Henrique Macieira
   cargo: string; // Ex: Coordenador
-  funcao: FuncaoUsuario; // admin_master | fiscal_tecnico | digitador
+  funcao: UserRole; // admin_master | fiscal_tecnico | digitador
   email: string; // Ex: matheus_macieira@hotmail.com
   senha?: string; // Senha para autenticação
   ativo: boolean;
   createdAt?: string;
   updatedAt?: string;
   ultimoAcesso?: string;
+}
+
+export interface Perfil {
+  id: string;
+  username: string;
+  nomeCompleto: string;
+  cargo: string;
+  email: string;
+  funcao: UserRole;
+  ativo: boolean;
+}
+
+export interface Sessao {
+  usuario: Perfil;
+  autenticadoEm: string;
+}
+
+export interface AuditContextInfo {
+  usuario?: string;
+  usuarioId?: string;
+  nomeUsuario?: string;
+  cargo?: string;
+  fiscalResponsavel?: string;
+  detalhesPersonalizados?: string;
 }
 
 export const USUARIO_MASTER_SEED: Usuario = {

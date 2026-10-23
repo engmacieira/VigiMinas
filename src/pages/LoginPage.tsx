@@ -67,8 +67,9 @@ export const LoginPage: React.FC = () => {
     try {
       await login(userTrim, senha);
       navigate('/', { replace: true });
-    } catch (err: any) {
-      setErroLocal(err?.message || 'Falha na autenticação. Verifique sua senha.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha na autenticação. Verifique sua senha.';
+      setErroLocal(msg);
     } finally {
       setSubmitting(false);
     }

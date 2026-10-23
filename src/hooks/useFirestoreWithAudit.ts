@@ -51,12 +51,14 @@ export function useFirestoreWithAudit(): UseFirestoreWithAuditReturn {
           await updateWithAudit(colecao, docId, data, auditContext);
           break;
 
-        case 'delete':
-          const nomeEntidade = (data as any)?.razaoSocial || 
-            (data as any)?.numeroRelatorioTermo || 
-            docId;
+        case 'delete': {
+          const record = data as Record<string, unknown> | undefined;
+          const nomeEntidade = String(
+            record?.razaoSocial || record?.numeroRelatorioTermo || record?.nomeLocalTrabalho || docId
+          );
           await deleteWithAudit(colecao, docId, nomeEntidade, auditContext);
           break;
+        }
       }
     } catch (err) {
       console.error(`Erro ao executar mutação auditada (${operacao}) em ${colecao}:`, err);

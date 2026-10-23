@@ -134,15 +134,21 @@ export async function createWithAudit<T extends DocumentData>(
   await setDoc(docRef, dataComTimestamp);
 
   // Extração de dados da entidade para o log
-  const identificador = (data as any)?.razaoSocial || 
-    (data as any)?.numeroRelatorioTermo || 
-    (data as any)?.nomeLocalTrabalho || 
-    docId;
+  const recordData = data as Record<string, unknown>;
+  const identificador = String(
+    recordData.razaoSocial ||
+    recordData.numeroRelatorioTermo ||
+    recordData.nomeLocalTrabalho ||
+    docId
+  );
 
   const activeUser = getActiveAuditUser();
+  const fiscaisUltima = Array.isArray(recordData.fiscaisUltimaInspecao) ? recordData.fiscaisUltimaInspecao : undefined;
+  const fiscaisResp = Array.isArray(recordData.fiscaisResponsaveis) ? recordData.fiscaisResponsaveis : undefined;
+
   const fiscal = auditContext?.fiscalResponsavel || 
-    (data as any)?.fiscaisUltimaInspecao?.[0] || 
-    (data as any)?.fiscaisResponsaveis?.[0] || 
+    (fiscaisUltima?.[0] as string | undefined) ||
+    (fiscaisResp?.[0] as string | undefined) ||
     activeUser?.nomeCompleto ||
     'Fiscal VISA';
 
@@ -209,17 +215,25 @@ export async function updateWithAudit<T extends DocumentData>(
   // Executa atualização no Firestore
   await setDoc(docRef, dataComTimestamp);
 
-  const identificador = (data as any)?.razaoSocial || 
-    (snapshotAnterior as any)?.razaoSocial || 
-    (data as any)?.numeroRelatorioTermo || 
-    (snapshotAnterior as any)?.numeroRelatorioTermo || 
-    docId;
+  const recData = data as Record<string, unknown>;
+  const recSnap = snapshotAnterior as Record<string, unknown> | null;
+  const identificador = String(
+    recData.razaoSocial ||
+    recSnap?.razaoSocial ||
+    recData.numeroRelatorioTermo ||
+    recSnap?.numeroRelatorioTermo ||
+    docId
+  );
 
   const activeUser = getActiveAuditUser();
+  const fiscaisUltimaData = Array.isArray(recData.fiscaisUltimaInspecao) ? recData.fiscaisUltimaInspecao : undefined;
+  const fiscaisUltimaSnap = Array.isArray(recSnap?.fiscaisUltimaInspecao) ? recSnap.fiscaisUltimaInspecao : undefined;
+  const fiscaisRespData = Array.isArray(recData.fiscaisResponsaveis) ? recData.fiscaisResponsaveis : undefined;
+
   const fiscal = auditContext?.fiscalResponsavel || 
-    (data as any)?.fiscaisUltimaInspecao?.[0] || 
-    (snapshotAnterior as any)?.fiscaisUltimaInspecao?.[0] || 
-    (data as any)?.fiscaisResponsaveis?.[0] || 
+    (fiscaisUltimaData?.[0] as string | undefined) ||
+    (fiscaisUltimaSnap?.[0] as string | undefined) ||
+    (fiscaisRespData?.[0] as string | undefined) ||
     activeUser?.nomeCompleto ||
     'Fiscal VISA';
 
@@ -233,13 +247,13 @@ export async function updateWithAudit<T extends DocumentData>(
 
   // Monta resumo detalhado das alterações before/after
   const diffs: string[] = [];
-  if (snapshotAnterior) {
+  if (recSnap) {
     for (const key of Object.keys(data)) {
       if (key === 'updatedAt' || key === 'createdAt') continue;
-      const ant = (snapshotAnterior as any)[key];
-      const nov = (data as any)[key];
+      const ant = recSnap[key];
+      const nov = recData[key];
       if (JSON.stringify(ant) !== JSON.stringify(nov)) {
-        const formatVal = (v: any) => {
+        const formatVal = (v: unknown) => {
           if (v === undefined || v === null || v === '') return 'vazio';
           if (typeof v === 'object') return JSON.stringify(v);
           return String(v);

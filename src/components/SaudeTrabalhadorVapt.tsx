@@ -19,6 +19,8 @@ import {
 import { Estabelecimento, InspecaoVapt, StatusInspecaoVapt } from '../types/vigiminas';
 import { formatarDataBr } from '../services/vigiminasService';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
+import { useContext } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
 
 interface SaudeTrabalhadorVaptProps {
   inspecoesVapt: InspecaoVapt[];
@@ -40,6 +42,10 @@ export const SaudeTrabalhadorVapt: React.FC<SaudeTrabalhadorVaptProps> = ({
   onClearVaptInicial
 }) => {
   const { fiscaisAtivos, configuracao } = useVigiMinas();
+  const auth = useContext(AuthContext);
+  const usuario = auth?.usuario;
+  const defaultFiscal = usuario?.nomeCompleto || fiscaisAtivos[0] || 'Fiscal Sanitário';
+
   const [modalAberto, setModalAberto] = useState(false);
   const [modalImpressaoAberto, setModalImpressaoAberto] = useState(false);
   const [vaptSelecionadaParaImpressao, setVaptSelecionadaParaImpressao] = useState<InspecaoVapt | null>(null);
@@ -52,7 +58,7 @@ export const SaudeTrabalhadorVapt: React.FC<SaudeTrabalhadorVaptProps> = ({
     nomeLocalTrabalho: '',
     dataInspecao: new Date().toISOString().split('T')[0],
     numeroRelatorioTermo: `TV-VAPT/${configuracao.exercicioAtivo.anoExercicio}-${String(inspecoesVapt.length + 1).padStart(3, '0')}`,
-    fiscaisResponsaveis: [fiscaisAtivos[0] || 'Lucas Silveira'],
+    fiscaisResponsaveis: [defaultFiscal],
     principaisRiscosIdentificados: '',
     recomendacoesOrientacoes: '',
     statusInspecao: 'Concluída',
@@ -70,7 +76,7 @@ export const SaudeTrabalhadorVapt: React.FC<SaudeTrabalhadorVaptProps> = ({
         nomeLocalTrabalho: `${vaptInicialParaCadastro.razaoSocial} (${vaptInicialParaCadastro.endereco.bairro})`,
         dataInspecao: new Date().toISOString().split('T')[0],
         numeroRelatorioTermo: `TV-VAPT/${configuracao.exercicioAtivo.anoExercicio}-${String(inspecoesVapt.length + 1).padStart(3, '0')}`,
-        fiscaisResponsaveis: [fiscaisAtivos[0] || 'Lucas Silveira'],
+        fiscaisResponsaveis: [defaultFiscal],
         principaisRiscosIdentificados: '',
         recomendacoesOrientacoes: '',
         statusInspecao: 'Concluída',
@@ -88,7 +94,7 @@ export const SaudeTrabalhadorVapt: React.FC<SaudeTrabalhadorVaptProps> = ({
       nomeLocalTrabalho: estabelecimentos[0] ? `${estabelecimentos[0].razaoSocial} (Área de Produção)` : '',
       dataInspecao: new Date().toISOString().split('T')[0],
       numeroRelatorioTermo: `TV-VAPT/${configuracao.exercicioAtivo.anoExercicio}-${String(inspecoesVapt.length + 1).padStart(3, '0')}`,
-      fiscaisResponsaveis: [fiscaisAtivos[0] || 'Lucas Silveira'],
+      fiscaisResponsaveis: [defaultFiscal],
       principaisRiscosIdentificados: 'Risco Ergonômico: Levantamento manual de peso sem apoio mecânico. Risco de Acidentes: Transmissão de força de maquinário sem barreira de proteção física.',
       recomendacoesOrientacoes: '1. Adequar proteções de máquinas conforme NR-12. 2. Implementar medidas preventivas e fornecer EPIs com Certificado de Aprovação (CA) regular.',
       statusInspecao: 'Concluída',

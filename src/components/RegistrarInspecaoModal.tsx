@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { Estabelecimento } from '../types/vigiminas';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
+import { useContext } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
 
 interface RegistrarInspecaoModalProps {
   isOpen: boolean;
@@ -33,13 +35,17 @@ export const RegistrarInspecaoModal: React.FC<RegistrarInspecaoModalProps> = ({
   onConfirmInspecao
 }) => {
   const { fiscaisAtivos, configuracao } = useVigiMinas();
+  const auth = useContext(AuthContext);
+  const usuario = auth?.usuario;
   if (!isOpen || !estabelecimento) return null;
 
   const hoje = new Date().toISOString().split('T')[0];
   const proximoAno = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
 
+  const defaultFiscal = usuario?.nomeCompleto || fiscaisAtivos[0] || 'Fiscal Sanitário';
+
   const [dataInspecao, setDataInspecao] = useState(hoje);
-  const [fiscaisSelecionados, setFiscaisSelecionados] = useState<string[]>([fiscaisAtivos[0] || 'Lucas Silveira']);
+  const [fiscaisSelecionados, setFiscaisSelecionados] = useState<string[]>([defaultFiscal]);
   const [renovarAlvara, setRenovarAlvara] = useState(true);
   const [novoAlvaraNumero, setNovoAlvaraNumero] = useState(`ALV-${configuracao.exercicioAtivo.anoExercicio}/${Math.floor(Math.random() * 90 + 10)}`);
   const [novaValidadeAlvara, setNovaValidadeAlvara] = useState(proximoAno);

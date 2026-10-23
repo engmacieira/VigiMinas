@@ -28,7 +28,7 @@ export interface AuthContextType {
   atualizarMeuPerfil: (dados: { nomeCompleto: string; email: string; cargo: string }, senhaAtual?: string, novaSenha?: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [usuario, setUsuario] = useState<Usuario | null>(() => getSessaoAtiva());
@@ -75,8 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userLogado = await autenticarUsuario(username, senha);
       setUsuario(userLogado);
       await carregarUsuarios();
-    } catch (err: any) {
-      const msg = err?.message || 'Falha na autenticação. Verifique suas credenciais.';
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha na autenticação. Verifique suas credenciais.';
       setErroLogin(msg);
       throw err;
     }
