@@ -6,6 +6,7 @@ import {
   fetchConfiguracaoSistema,
   saveEstabelecimento, 
   deleteEstabelecimento, 
+  deletePermanenteEstabelecimento,
   restoreEstabelecimento,
   saveInspecaoVapt, 
   deleteInspecaoVapt, 
@@ -64,6 +65,7 @@ interface VigiMinasContextType {
   recarregarDados: () => Promise<void>;
   salvarEstabelecimento: (est: Estabelecimento) => Promise<void>;
   removerEstabelecimento: (id: string, razao: string, motivoExclusao?: string) => Promise<void>;
+  excluirPermanenteEstabelecimento: (id: string, razao: string, motivoExclusao?: string) => Promise<void>;
   restaurarEstabelecimento: (id: string, razao: string) => Promise<void>;
   executarInspecaoRapida: (payload: InspecaoRapidaPayload) => Promise<void>;
   salvarVistoriaVapt: (vapt: InspecaoVapt) => Promise<void>;
@@ -80,6 +82,7 @@ interface VigiMinasContextType {
   adicionarFiscal: (fiscal: Omit<FiscalSanitario, 'id'>) => Promise<void>;
   atualizarFiscal: (fiscal: FiscalSanitario) => Promise<void>;
   removerFiscal: (fiscalId: string, motivoExclusao?: string) => Promise<void>;
+  excluirPermanenteFiscal: (fiscalId: string, motivoExclusao?: string) => Promise<void>;
   restaurarFiscal: (fiscalId: string) => Promise<void>;
   atualizarDadosSecretaria: (dados: DadosSecretaria) => Promise<void>;
   atualizarExercicioAtivo: (exercicio: ConfiguracaoExercicio) => Promise<void>;
@@ -160,11 +163,18 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     showToast(`Estabelecimento "${est.razaoSocial}" gravado com sucesso.`);
   }, [recarregarDados, showToast]);
 
-  // Evento: Remover Estabelecimento (Soft Delete com Motivo)
+  // Evento: Remover Estabelecimento (Arquivamento / Soft Delete com Motivo)
   const removerEstabelecimento = useCallback(async (id: string, razao: string, motivoExclusao?: string) => {
     await deleteEstabelecimento(id, motivoExclusao);
     await recarregarDados();
-    showToast(`Cadastro de "${razao}" arquivado (exclusão lógica).`);
+    showToast(`Estabelecimento "${razao}" arquivado.`);
+  }, [recarregarDados, showToast]);
+
+  // Evento: Excluir Definitivamente da Visão do Usuário (Soft Delete retido em banco para administradores)
+  const excluirPermanenteEstabelecimento = useCallback(async (id: string, razao: string, motivoExclusao?: string) => {
+    await deletePermanenteEstabelecimento(id, motivoExclusao);
+    await recarregarDados();
+    showToast(`Estabelecimento "${razao}" excluído com sucesso.`);
   }, [recarregarDados, showToast]);
 
   // Evento: Restaurar Estabelecimento (Undo Soft Delete)
@@ -338,6 +348,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           ...f,
           ativo: false,
           isDeleted: true,
+          isPermanentlyDeleted: false,
           deletedAt: timestamp,
           deletedBy: 'eng.macieira@gmail.com',
           motivoExclusao: motivoExclusao || 'Exclusão lógica do quadro sanitário municipal'
@@ -354,7 +365,36 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     setConfiguracao(novaConfig);
     await recarregarDados();
-    showToast(`Fiscal "${fiscal?.nome || ''}" desativado/arquivado com sucesso.`);
+    showToast(`Fiscal "${fiscal?.nome || ''}" arquivado com sucesso.`);
+  }, [configuracao, recarregarDados, showToast]);
+
+  const excluirPermanenteFiscal = useCallback(async (fiscalId: string, motivoExclusao?: string) => {
+    const fiscal = configuracao.fiscais.find(f => f.id === fiscalId);
+    const timestamp = new Date().toISOString();
+    const novaLista = configuracao.fiscais.map(f => {
+      if (f.id === fiscalId) {
+        return {
+          ...f,
+          ativo: false,
+          isDeleted: true,
+          isPermanentlyDeleted: true,
+          permanentlyDeletedAt: timestamp,
+          permanentlyDeletedBy: 'eng.macieira@gmail.com',
+          motivoExclusaoPermanente: motivoExclusao || 'Exclusão definitiva solicitada na aba de arquivados'
+        };
+      }
+      return f;
+    });
+    const novaConfig: ConfiguracaoSistema = {
+      ...configuracao,
+      fiscais: novaLista
+    };
+    await saveConfiguracaoSistema(novaConfig, {
+      detalhesPersonalizados: `Exclusão definitiva da visualização de arquivados do fiscal sanitário "${fiscal?.nome || fiscalId}" (preservado em banco para administradores).${motivoExclusao ? ` Motivo: "${motivoExclusao}".` : ''}`
+    });
+    setConfiguracao(novaConfig);
+    await recarregarDados();
+    showToast(`Fiscal "${fiscal?.nome || ''}" excluído com sucesso.`);
   }, [configuracao, recarregarDados, showToast]);
 
   const restaurarFiscal = useCallback(async (fiscalId: string) => {
@@ -365,9 +405,13 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           ...f,
           ativo: true,
           isDeleted: false,
+          isPermanentlyDeleted: false,
           deletedAt: undefined,
           deletedBy: undefined,
-          motivoExclusao: undefined
+          motivoExclusao: undefined,
+          permanentlyDeletedAt: undefined,
+          permanentlyDeletedBy: undefined,
+          motivoExclusaoPermanente: undefined
         };
       }
       return f;
@@ -465,6 +509,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     recarregarDados,
     salvarEstabelecimento,
     removerEstabelecimento,
+    excluirPermanenteEstabelecimento,
     restaurarEstabelecimento,
     executarInspecaoRapida,
     salvarVistoriaVapt,
@@ -479,6 +524,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     adicionarFiscal,
     atualizarFiscal,
     removerFiscal,
+    excluirPermanenteFiscal,
     restaurarFiscal,
     atualizarDadosSecretaria,
     atualizarExercicioAtivo,
@@ -498,6 +544,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     recarregarDados,
     salvarEstabelecimento,
     removerEstabelecimento,
+    excluirPermanenteEstabelecimento,
     restaurarEstabelecimento,
     executarInspecaoRapida,
     salvarVistoriaVapt,
@@ -512,6 +559,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     adicionarFiscal,
     atualizarFiscal,
     removerFiscal,
+    excluirPermanenteFiscal,
     restaurarFiscal,
     atualizarDadosSecretaria,
     atualizarExercicioAtivo,

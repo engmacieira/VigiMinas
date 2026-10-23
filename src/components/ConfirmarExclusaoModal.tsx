@@ -23,6 +23,7 @@ interface ConfirmarExclusaoModalProps {
   tituloEntidade: string;
   subtituloEntidade?: string;
   identificador?: string;
+  isPermanentAction?: boolean;
 }
 
 const MOTIVOS_SUGERIDOS: Record<TipoEntidadeExclusao, string[]> = {
@@ -56,7 +57,8 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
   tipo,
   tituloEntidade,
   subtituloEntidade,
-  identificador
+  identificador,
+  isPermanentAction = false
 }) => {
   const [motivoSelecionado, setMotivoSelecionado] = useState<string>('');
   const [motivoPersonalizado, setMotivoPersonalizado] = useState<string>('');
@@ -75,14 +77,14 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
   const handleConfirmar = async () => {
     const motivoFinal = motivoPersonalizado.trim() 
       ? `${motivoSelecionado}: ${motivoPersonalizado.trim()}`
-      : (motivoSelecionado || 'Exclusão lógica realizada via interface pelo fiscal');
+      : (motivoSelecionado || (isPermanentAction ? 'Exclusão definitiva solicitada na aba de arquivados' : 'Arquivamento realizado via interface'));
 
     setProcessando(true);
     try {
       await onConfirm(motivoFinal);
       onClose();
     } catch (err) {
-      console.error('Erro ao executar soft delete:', err);
+      console.error('Erro ao executar exclusão:', err);
     } finally {
       setProcessando(false);
     }
@@ -126,11 +128,11 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
             </div>
             <div>
               <h2 id="modal-exclusao-titulo" className="text-base font-bold text-rose-950">
-                Confirmar Exclusão Lógica
+                {isPermanentAction ? 'Confirmar Exclusão' : 'Confirmar Arquivamento'}
               </h2>
               <span className="text-xs text-rose-700 font-medium flex items-center gap-1">
                 <RotateCcw className="w-3 h-3 text-rose-600" />
-                Soft Delete Auditável (recuperável)
+                {isPermanentAction ? 'Remoção da visualização de arquivados' : 'Movido para a aba Arquivados (recuperável)'}
               </span>
             </div>
           </div>

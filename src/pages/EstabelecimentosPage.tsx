@@ -18,6 +18,7 @@ export const EstabelecimentosPage: React.FC = () => {
     salvarEstabelecimento, 
     removerEstabelecimento, 
     restaurarEstabelecimento,
+    excluirPermanenteEstabelecimento,
     executarInspecaoRapida, 
     exportarPlanilha 
   } = useVigiMinas();
@@ -36,9 +37,9 @@ export const EstabelecimentosPage: React.FC = () => {
   const [modalExportarAberto, setModalExportarAberto] = useState(false);
   const [estabelecimentosFiltrados, setEstabelecimentosFiltrados] = useState<Estabelecimento[]>([]);
 
-  // Estado para confirmação de soft delete auditável
+  // Estado para confirmação de soft delete auditável (arquivamento ou remoção da visão)
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
-  const [estParaExcluir, setEstParaExcluir] = useState<{ id: string; razao: string; cnpj: string } | null>(null);
+  const [estParaExcluir, setEstParaExcluir] = useState<{ id: string; razao: string; cnpj: string; isPermanent?: boolean } | null>(null);
 
   // Total de estabelecimentos ativos aguardando agendamento (inclui Suspensos)
   const totalPendentesAgendamento = estabelecimentos.filter(
@@ -60,14 +61,30 @@ export const EstabelecimentosPage: React.FC = () => {
     setEstParaExcluir({
       id,
       razao,
-      cnpj: cnpj || est?.cnpjCpf || ''
+      cnpj: cnpj || est?.cnpjCpf || '',
+      isPermanent: false
+    });
+    setModalExcluirAberto(true);
+  };
+
+  const handleSolicitarExcluirPermanente = (id: string, razao: string, cnpj?: string) => {
+    const est = estabelecimentos.find(e => e.id === id);
+    setEstParaExcluir({
+      id,
+      razao,
+      cnpj: cnpj || est?.cnpjCpf || '',
+      isPermanent: true
     });
     setModalExcluirAberto(true);
   };
 
   const handleConfirmarExclusao = async (motivo: string) => {
     if (!estParaExcluir) return;
-    await removerEstabelecimento(estParaExcluir.id, estParaExcluir.razao, motivo);
+    if (estParaExcluir.isPermanent) {
+      await excluirPermanenteEstabelecimento(estParaExcluir.id, estParaExcluir.razao, motivo);
+    } else {
+      await removerEstabelecimento(estParaExcluir.id, estParaExcluir.razao, motivo);
+    }
     if (modalEstAberto && estParaEditar?.id === estParaExcluir.id) {
       setModalEstAberto(false);
     }
@@ -155,6 +172,7 @@ export const EstabelecimentosPage: React.FC = () => {
           onNovoEstabelecimento={handleNovo}
           onEditarEstabelecimento={handleEditar}
           onExcluirEstabelecimento={handleSolicitarExcluir}
+          onExcluirPermanente={handleSolicitarExcluirPermanente}
           onRestaurarEstabelecimento={handleRestaurar}
           onRegistrarInspecaoRapida={handleAbrirInspecao}
           onCriarVaptVinculada={handleCriarVaptVinculada}
@@ -212,6 +230,7 @@ export const EstabelecimentosPage: React.FC = () => {
         tituloEntidade={estParaExcluir?.razao || ''}
         subtituloEntidade={estParaExcluir?.cnpj ? `CNPJ/CPF: ${estParaExcluir.cnpj}` : undefined}
         identificador={estParaExcluir?.id}
+        isPermanentAction={estParaExcluir?.isPermanent || false}
       />
     </div>
   );

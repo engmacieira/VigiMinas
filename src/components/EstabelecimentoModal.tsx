@@ -925,7 +925,7 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = ({
                 className="min-h-[44px] px-3.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4 text-rose-600" />
-                <span>Excluir (Soft Delete)</span>
+                <span>Excluir Estabelecimento</span>
               </button>
             ) : <div />}
 

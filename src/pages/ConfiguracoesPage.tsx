@@ -21,6 +21,7 @@ import {
   UserCheck, 
   Tag, 
   RotateCcw,
+  Archive,
   Sliders,
   Database,
   Sparkles,
@@ -38,6 +39,7 @@ export const ConfiguracoesPage: React.FC = () => {
     adicionarFiscal, 
     atualizarFiscal, 
     removerFiscal, 
+    excluirPermanenteFiscal,
     restaurarFiscal,
     atualizarDadosSecretaria, 
     atualizarExercicioAtivo,
@@ -53,9 +55,10 @@ export const ConfiguracoesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('fiscais');
   const [abaFiscais, setAbaFiscais] = useState<'ativos' | 'arquivados'>('ativos');
 
-  // Estado para confirmação de soft delete de fiscal
+  // Estado para confirmação de soft delete de fiscal (arquivamento ou exclusão permanente da lista)
   const [modalExcluirFiscalAberto, setModalExcluirFiscalAberto] = useState(false);
   const [fiscalParaExcluir, setFiscalParaExcluir] = useState<FiscalSanitario | null>(null);
+  const [isPermanentExclusaoFiscal, setIsPermanentExclusaoFiscal] = useState(false);
 
   // Estados locais para formulário da Secretaria
   const [dadosSecretaria, setDadosSecretaria] = useState<DadosSecretaria>({ ...configuracao.secretaria });
@@ -187,18 +190,30 @@ export const ConfiguracoesPage: React.FC = () => {
   };
 
   const fiscaisRegulares = configuracao.fiscais.filter(f => !f.isDeleted);
-  const fiscaisArquivados = configuracao.fiscais.filter(f => f.isDeleted);
+  const fiscaisArquivados = configuracao.fiscais.filter(f => f.isDeleted && !f.isPermanentlyDeleted);
   const fiscaisAtivosCount = fiscaisRegulares.filter(f => f.ativo).length;
 
-  // Remover Fiscal (Soft Delete Auditável)
+  // Arquivar Fiscal (1º nível de soft delete)
   const handleRemoverFiscal = (fiscal: FiscalSanitario) => {
     setFiscalParaExcluir(fiscal);
+    setIsPermanentExclusaoFiscal(false);
+    setModalExcluirFiscalAberto(true);
+  };
+
+  // Excluir Definitivamente da visão (2º nível de soft delete retido em banco)
+  const handleSolicitarExcluirPermanenteFiscal = (fiscal: FiscalSanitario) => {
+    setFiscalParaExcluir(fiscal);
+    setIsPermanentExclusaoFiscal(true);
     setModalExcluirFiscalAberto(true);
   };
 
   const handleConfirmarExclusaoFiscal = async (motivo: string) => {
     if (!fiscalParaExcluir) return;
-    await removerFiscal(fiscalParaExcluir.id, motivo);
+    if (isPermanentExclusaoFiscal) {
+      await excluirPermanenteFiscal(fiscalParaExcluir.id, motivo);
+    } else {
+      await removerFiscal(fiscalParaExcluir.id, motivo);
+    }
   };
 
   const handleRestaurarFiscal = async (fiscal: FiscalSanitario) => {
@@ -376,15 +391,15 @@ export const ConfiguracoesPage: React.FC = () => {
               onClick={() => setAbaFiscais('arquivados')}
               className={`min-h-[40px] px-4 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                 abaFiscais === 'arquivados'
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-rose-700 hover:bg-rose-50'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-amber-700 hover:bg-amber-50'
               }`}
             >
-              <Trash2 className="w-4 h-4 text-rose-500" />
-              <span>Lixeira / Arquivados (Soft Delete)</span>
+              <Archive className="w-4 h-4" />
+              <span>Arquivados</span>
               {fiscaisArquivados.length > 0 && (
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                  abaFiscais === 'arquivados' ? 'bg-rose-700 text-white' : 'bg-rose-100 text-rose-800'
+                  abaFiscais === 'arquivados' ? 'bg-amber-700 text-white' : 'bg-amber-100 text-amber-800'
                 }`}>
                   {fiscaisArquivados.length}
                 </span>
@@ -483,8 +498,8 @@ export const ConfiguracoesPage: React.FC = () => {
 
                       <button
                         onClick={() => handleRemoverFiscal(fiscal)}
-                        title="Excluir fiscal (Soft Delete)"
-                        aria-label="Excluir fiscal"
+                        title="Arquivar fiscal"
+                        aria-label="Arquivar fiscal"
                         className="min-h-[38px] min-w-[38px] rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-700 transition flex items-center justify-center cursor-pointer active:scale-95"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -497,26 +512,26 @@ export const ConfiguracoesPage: React.FC = () => {
             </div>
           )}
 
-          {/* Grid de Fiscais Arquivados / Soft Delete */}
+          {/* Grid de Fiscais Arquivados */}
           {abaFiscais === 'arquivados' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {fiscaisArquivados.length === 0 ? (
                 <div className="col-span-full p-8 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
-                  <p className="font-semibold text-slate-700">Nenhum fiscal na lixeira / arquivado</p>
-                  <p className="text-xs text-slate-400 mt-1">Fiscais excluídos logicamente permanecerão aqui para fins de histórico e poderão ser restaurados.</p>
+                  <p className="font-semibold text-slate-700">Nenhum fiscal arquivado</p>
+                  <p className="text-xs text-slate-400 mt-1">Fiscais desligados ou arquivados permanecerão aqui para fins de histórico e poderão ser restaurados.</p>
                 </div>
               ) : (
                 fiscaisArquivados.map(fiscal => (
                   <div 
                     key={fiscal.id}
-                    className="bg-white rounded-xl border border-rose-200 p-4 transition shadow-2xs flex flex-col justify-between space-y-3"
+                    className="bg-white rounded-xl border border-slate-200 p-4 transition shadow-2xs flex flex-col justify-between space-y-3"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 mb-1">
-                            <Trash2 className="w-3 h-3" />
-                            Arquivado (Soft Delete)
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 mb-1">
+                            <Archive className="w-3 h-3 text-amber-600" />
+                            Arquivado
                           </span>
                           <h4 className="text-sm font-bold text-slate-900 leading-tight">
                             {fiscal.nome}
@@ -527,23 +542,35 @@ export const ConfiguracoesPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-950 space-y-1 mt-2">
-                        <span className="font-bold block text-rose-900 text-[11px]">Justificativa do Desligamento:</span>
-                        <p>{fiscal.motivoExclusao || 'Exclusão lógica do quadro oficial'}</p>
-                        <div className="text-[10px] text-rose-700 pt-1.5 border-t border-rose-100 flex items-center justify-between">
+                      <div className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 space-y-1 mt-2">
+                        <span className="font-bold block text-amber-900 text-[11px]">Justificativa do Desligamento:</span>
+                        <p>{fiscal.motivoExclusao || 'Desligamento do quadro oficial'}</p>
+                        <div className="text-[10px] text-amber-800 pt-1.5 border-t border-amber-200/60 flex items-center justify-between">
                           <span>Arquivado em: {fiscal.deletedAt ? new Date(fiscal.deletedAt).toLocaleDateString('pt-BR') : '-'}</span>
                           <span className="truncate max-w-[120px]">Por: {fiscal.deletedBy || 'Administrador'}</span>
                         </div>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleRestaurarFiscal(fiscal)}
-                      className="w-full min-h-[40px] px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-97 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Restaurar ao Quadro Ativo</span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        onClick={() => handleRestaurarFiscal(fiscal)}
+                        className="min-h-[40px] px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-97 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        title="Restaurar fiscal ao quadro oficial ativo"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Restaurar</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleSolicitarExcluirPermanenteFiscal(fiscal)}
+                        className="min-h-[40px] px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 active:scale-97 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        title="Excluir fiscal"
+                      >
+                        <Trash2 className="w-4 h-4 text-rose-600" />
+                        <span>Excluir</span>
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -1369,6 +1396,7 @@ export const ConfiguracoesPage: React.FC = () => {
         tituloEntidade={fiscalParaExcluir?.nome || ''}
         subtituloEntidade={fiscalParaExcluir ? `${fiscalParaExcluir.cargo} (Matrícula: ${fiscalParaExcluir.matricula})` : undefined}
         identificador={fiscalParaExcluir?.matricula || fiscalParaExcluir?.id}
+        isPermanentAction={isPermanentExclusaoFiscal}
       />
 
     </div>

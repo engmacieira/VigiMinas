@@ -38,6 +38,7 @@ interface EstabelecimentosListProps {
   onNovoEstabelecimento: () => void;
   onEditarEstabelecimento: (est: Estabelecimento) => void;
   onExcluirEstabelecimento: (id: string, razao: string) => void;
+  onExcluirPermanente?: (id: string, razao: string, cnpj?: string) => void;
   onRestaurarEstabelecimento?: (id: string, razao: string) => void;
   onRegistrarInspecaoRapida: (est: Estabelecimento) => void;
   onCriarVaptVinculada: (est: Estabelecimento) => void;
@@ -53,6 +54,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
   onNovoEstabelecimento,
   onEditarEstabelecimento,
   onExcluirEstabelecimento,
+  onExcluirPermanente,
   onRestaurarEstabelecimento,
   onRegistrarInspecaoRapida,
   onCriarVaptVinculada,
@@ -72,14 +74,14 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
   const ITENS_POR_PAGINA = 10;
 
   const totalAtivos = useMemo(() => estabelecimentos.filter(e => !e.isDeleted).length, [estabelecimentos]);
-  const totalArquivados = useMemo(() => estabelecimentos.filter(e => e.isDeleted).length, [estabelecimentos]);
+  const totalArquivados = useMemo(() => estabelecimentos.filter(e => e.isDeleted && !e.isPermanentlyDeleted).length, [estabelecimentos]);
 
   // Filtragem
   const filtrados = useMemo(() => {
     return estabelecimentos.filter((est) => {
-      // Separação estrita entre ativos e soft delete
+      // Separação estrita entre ativos e arquivados (ocultando excluídos da visão do usuário)
       if (abaExibicao === 'ativos' && est.isDeleted) return false;
-      if (abaExibicao === 'arquivados' && !est.isDeleted) return false;
+      if (abaExibicao === 'arquivados' && (!est.isDeleted || est.isPermanentlyDeleted)) return false;
 
       const termo = busca.toLowerCase().trim();
       const matchBusca = !termo || 
@@ -251,15 +253,15 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
           onClick={() => setAbaExibicao('arquivados')}
           className={`min-h-[44px] px-4 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
             abaExibicao === 'arquivados'
-              ? 'bg-rose-600 text-white shadow-xs'
-              : 'text-slate-600 hover:text-rose-700 hover:bg-rose-50'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'text-slate-600 hover:text-amber-700 hover:bg-amber-50'
           }`}
         >
-          <Trash2 className="w-4 h-4 text-rose-500" />
-          <span>Lixeira / Arquivados (Soft Delete)</span>
+          <Archive className="w-4 h-4" />
+          <span>Arquivados</span>
           {totalArquivados > 0 && (
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              abaExibicao === 'arquivados' ? 'bg-rose-700 text-white' : 'bg-rose-100 text-rose-800'
+              abaExibicao === 'arquivados' ? 'bg-amber-700 text-white' : 'bg-amber-100 text-amber-800'
             }`}>
               {totalArquivados}
             </span>
@@ -388,9 +390,9 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                   </>
                 ) : (
                   <>
-                    <th className="py-3 px-4">Justificativa da Exclusão Lógica</th>
-                    <th className="py-3 px-4">Data & Fiscal</th>
-                    <th className="py-3 px-4 text-right">Ação</th>
+                    <th className="py-3 px-4">Motivo do Arquivamento / Baixa</th>
+                    <th className="py-3 px-4">Data & Responsável</th>
+                    <th className="py-3 px-4 text-right">Ações</th>
                   </>
                 )}
               </tr>
@@ -400,10 +402,10 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-500">
                     <p className="font-semibold text-slate-700">
-                      {abaExibicao === 'ativos' ? 'Nenhum estabelecimento ativo encontrado' : 'Nenhum registro na lixeira / arquivado'}
+                      {abaExibicao === 'ativos' ? 'Nenhum estabelecimento ativo encontrado' : 'Nenhum estabelecimento arquivado'}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      {abaExibicao === 'ativos' ? 'Ajuste os filtros ou adicione um novo cadastro.' : 'Registros excluídos logicamente aparecerão aqui e poderão ser restaurados.'}
+                      {abaExibicao === 'ativos' ? 'Ajuste os filtros ou adicione um novo cadastro.' : 'Empresas encerradas ou arquivadas aparecerão aqui.'}
                     </p>
                   </td>
                 </tr>
@@ -413,7 +415,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                     return (
                       <tr 
                         key={est.id} 
-                        className="hover:bg-rose-50/40 bg-rose-50/20 text-slate-700 transition duration-100"
+                        className="hover:bg-amber-50/40 bg-amber-50/20 text-slate-700 transition duration-100"
                       >
                         {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
                         <td className="py-3 px-4">
@@ -430,7 +432,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                             </span>
                           )}
                           <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
-                            <span className="font-mono bg-white px-1 py-0.2 rounded border border-rose-200 text-rose-800">
+                            <span className="font-mono bg-white px-1 py-0.2 rounded border border-amber-200 text-amber-900">
                               {est.cnpjCpf}
                             </span>
                             {est.identificacaoMunicipal && (
@@ -450,7 +452,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                             </span>
                             {est.cnaesSecundarios && est.cnaesSecundarios.length > 0 && (
                               <span 
-                                className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-100 text-rose-800 border border-rose-200"
+                                className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"
                                 title={`CNAEs Secundários:\n${est.cnaesSecundarios.join('\n')}`}
                               >
                                 +{est.cnaesSecundarios.length} sec.
@@ -467,11 +469,11 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                           {getRiscoBadge(est.nivelRisco)}
                         </td>
 
-                        {/* Justificativa do Soft Delete */}
+                        {/* Justificativa do Arquivamento */}
                         <td className="py-3 px-4 max-w-xs">
-                          <div className="p-2 rounded-lg bg-rose-100/70 border border-rose-200 text-rose-950 text-[11px]">
-                            <span className="font-bold text-[10px] uppercase block text-rose-800">Motivo da Exclusão:</span>
-                            <p className="line-clamp-2 mt-0.5">{est.motivoExclusao || 'Exclusão lógica realizada via interface'}</p>
+                          <div className="p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-950 text-[11px]">
+                            <span className="font-bold text-[10px] uppercase block text-amber-800">Motivo:</span>
+                            <p className="line-clamp-2 mt-0.5">{est.motivoExclusao || 'Encerramento de atividades / Arquivado'}</p>
                           </div>
                         </td>
 
@@ -485,16 +487,29 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                           </span>
                         </td>
 
-                        {/* Ação: Restaurar */}
+                        {/* Ações: Restaurar e Excluir */}
                         <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => onRestaurarEstabelecimento && onRestaurarEstabelecimento(est.id, est.razaoSocial)}
-                            title="Restaurar cadastro para a base ativa"
-                            className="min-h-[44px] px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 ml-auto cursor-pointer shadow-xs active:scale-95"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                            <span>Restaurar</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => onRestaurarEstabelecimento && onRestaurarEstabelecimento(est.id, est.razaoSocial)}
+                              title="Restaurar cadastro para a base ativa"
+                              className="min-h-[44px] px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              <span>Restaurar</span>
+                            </button>
+
+                            {onExcluirPermanente && (
+                              <button
+                                onClick={() => onExcluirPermanente(est.id, est.razaoSocial, est.cnpjCpf)}
+                                title="Excluir estabelecimento"
+                                className="min-h-[44px] px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                              >
+                                <Trash2 className="w-4 h-4 text-rose-600" />
+                                <span>Excluir</span>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -682,13 +697,13 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
               return (
                 <div 
                   key={est.id}
-                  className="bg-white p-4 rounded-xl border border-rose-200 shadow-2xs space-y-3"
+                  className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 mb-1">
-                        <Trash2 className="w-3 h-3" />
-                        <span>Arquivado (Soft Delete)</span>
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 mb-1">
+                        <Archive className="w-3 h-3 text-amber-600" />
+                        <span>Arquivado</span>
                       </div>
                       <h3 className="font-bold text-slate-900 text-sm leading-tight">
                         {est.nomeFantasia || est.razaoSocial}
@@ -715,22 +730,33 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                     {getRiscoBadge(est.nivelRisco)}
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-950 space-y-1">
-                    <span className="font-bold block text-rose-900 text-[11px]">Motivo da Exclusão:</span>
-                    <p className="leading-snug">{est.motivoExclusao || 'Exclusão lógica realizada pelo usuário'}</p>
-                    <div className="text-[10px] text-rose-700 pt-1.5 border-t border-rose-100 flex items-center justify-between">
+                  <div className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 space-y-1">
+                    <span className="font-bold block text-amber-900 text-[11px]">Motivo do Arquivamento:</span>
+                    <p className="leading-snug">{est.motivoExclusao || 'Encerramento de atividades / Arquivado'}</p>
+                    <div className="text-[10px] text-amber-800 pt-1.5 border-t border-amber-200/60 flex items-center justify-between">
                       <span>Data: {est.deletedAt ? formatarDataBr(est.deletedAt.split('T')[0]) : '-'}</span>
                       <span className="truncate max-w-[130px]">Por: {est.deletedBy || 'Fiscal VISA'}</span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => onRestaurarEstabelecimento && onRestaurarEstabelecimento(est.id, est.razaoSocial)}
-                    className="w-full min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-97 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>Restaurar Cadastro para a Base Ativa</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => onRestaurarEstabelecimento && onRestaurarEstabelecimento(est.id, est.razaoSocial)}
+                      className="min-h-[44px] px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-97 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Restaurar</span>
+                    </button>
+                    {onExcluirPermanente && (
+                      <button
+                        onClick={() => onExcluirPermanente(est.id, est.razaoSocial, est.cnpjCpf)}
+                        className="min-h-[44px] px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 active:scale-97 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <Trash2 className="w-4 h-4 text-rose-600" />
+                        <span>Excluir</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             }

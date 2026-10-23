@@ -138,7 +138,7 @@ describe('EstabelecimentoModal - Unit Tests', () => {
       />
     );
 
-    const deleteBtn = screen.getByText('Excluir (Soft Delete)');
+    const deleteBtn = screen.getByText('Excluir Estabelecimento');
     fireEvent.click(deleteBtn);
 
     expect(mockOnExcluir).toHaveBeenCalledWith(estMock.id, estMock.razaoSocial, estMock.cnpjCpf);

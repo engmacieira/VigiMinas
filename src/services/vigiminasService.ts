@@ -308,8 +308,52 @@ export async function deleteEstabelecimento(
   await softDeleteWithAudit('estabelecimentos', id, nomeDeletado, {
     ...auditContext,
     fiscalResponsavel: auditContext?.fiscalResponsavel || FISCAIS_MUNICIPIO[0],
-    detalhesPersonalizados: auditContext?.detalhesPersonalizados || `Exclusão lógica (soft delete) do cadastro de ${nomeDeletado}.${motivoExclusao ? ` Motivo: "${motivoExclusao}"` : ''}`
+    detalhesPersonalizados: auditContext?.detalhesPersonalizados || `Arquivamento do cadastro de ${nomeDeletado}.${motivoExclusao ? ` Motivo: "${motivoExclusao}"` : ''}`
   }, motivoExclusao);
+}
+
+export async function deletePermanenteEstabelecimento(
+  id: string,
+  motivoExclusao?: string,
+  auditContext?: { usuario?: string; fiscalResponsavel?: string; detalhesPersonalizados?: string }
+): Promise<void> {
+  let nomeDeletado = id;
+  const timestamp = new Date().toISOString();
+  try {
+    const backup = localStorage.getItem(LOCAL_STORAGE_EST_KEY);
+    if (backup) {
+      const list: Estabelecimento[] = JSON.parse(backup);
+      const estEncontrado = list.find(item => item.id === id);
+      if (estEncontrado) {
+        nomeDeletado = estEncontrado.razaoSocial;
+        estEncontrado.isDeleted = true;
+        estEncontrado.isPermanentlyDeleted = true;
+        estEncontrado.permanentlyDeletedAt = timestamp;
+        estEncontrado.permanentlyDeletedBy = auditContext?.usuario || 'eng.macieira@gmail.com';
+        estEncontrado.motivoExclusaoPermanente = motivoExclusao || 'Exclusão definitiva solicitada na aba de arquivados';
+      }
+      localStorage.setItem(LOCAL_STORAGE_EST_KEY, JSON.stringify(list));
+    }
+  } catch (e) {
+    console.error('Erro ao atualizar exclusão definitiva no cache local:', e);
+  }
+
+  // Executa atualização auditada no Firestore (Soft delete com retenção permanente no banco para administradores)
+  try {
+    await updateWithAudit('estabelecimentos', id, {
+      isDeleted: true,
+      isPermanentlyDeleted: true,
+      permanentlyDeletedAt: timestamp,
+      permanentlyDeletedBy: auditContext?.usuario || 'eng.macieira@gmail.com',
+      motivoExclusaoPermanente: motivoExclusao || 'Exclusão definitiva solicitada na aba de arquivados'
+    }, {
+      ...auditContext,
+      fiscalResponsavel: auditContext?.fiscalResponsavel || FISCAIS_MUNICIPIO[0],
+      detalhesPersonalizados: auditContext?.detalhesPersonalizados || `Exclusão definitiva da visão do usuário do cadastro de ${nomeDeletado}. Registro retido no banco de dados para administradores.${motivoExclusao ? ` Motivo: "${motivoExclusao}"` : ''}`
+    });
+  } catch (err) {
+    console.warn('Falha ao persistir exclusão permanente no Firestore, mantido em cache local:', err);
+  }
 }
 
 export async function restoreEstabelecimento(
@@ -325,6 +369,10 @@ export async function restoreEstabelecimento(
       if (estEncontrado) {
         nomeRestaurado = estEncontrado.razaoSocial;
         estEncontrado.isDeleted = false;
+        estEncontrado.isPermanentlyDeleted = false;
+        estEncontrado.permanentlyDeletedAt = undefined;
+        estEncontrado.permanentlyDeletedBy = undefined;
+        estEncontrado.motivoExclusaoPermanente = undefined;
         estEncontrado.deletedAt = undefined;
         estEncontrado.deletedBy = undefined;
         estEncontrado.motivoExclusao = undefined;

@@ -25,7 +25,8 @@
         "parecerProjetoArquitetonico": { "type": "string", "enum": ["Sim", "Não", "Não Aplicável"] },
         "observacoesBaixa": { "type": "string", "maxLength": 500 },
         "createdAt": { "type": "string" },
-        "updatedAt": { "type": "string" }
+        "updatedAt": { "type": "string" },
+        "isPermanentlyDeleted": { "type": "boolean", "description": "Soft delete definitivo da visão do usuário, retido no banco para administradores" }
       },
       "required": ["id", "cnpjCpf", "razaoSocial", "nivelRisco", "situacaoEstabelecimento", "situacaoAlvara", "competenciaFiscalizacao"]
     },

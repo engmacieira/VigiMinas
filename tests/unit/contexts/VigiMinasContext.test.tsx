@@ -82,6 +82,7 @@ import {
   saveEstabelecimento,
   deleteEstabelecimento,
   restoreEstabelecimento,
+  saveConfiguracaoSistema,
   limparBancoDeDados
 } from '@/src/services/vigiminasService';
 
@@ -183,5 +184,41 @@ describe('VigiMinasContext - Unit Tests', () => {
     expect(limparBancoDeDados).toHaveBeenCalled();
     expect(result.current.estabelecimentos).toEqual([]);
     expect(result.current.toastMessage).toContain('limpo com sucesso');
+  });
+
+  it('arquiva fiscal sanitário e atualiza toast', async () => {
+    const { result } = renderHook(() => useVigiMinas(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.removerFiscal('f-1', 'Exoneração');
+    });
+
+    expect(saveConfiguracaoSistema).toHaveBeenCalled();
+    expect(result.current.toastMessage).toContain('arquivado com sucesso');
+  });
+
+  it('executa exclusão permanente (2º nível) do fiscal e atualiza toast', async () => {
+    const { result } = renderHook(() => useVigiMinas(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.excluirPermanenteFiscal('f-1', 'Exclusão definitiva solicitada');
+    });
+
+    expect(saveConfiguracaoSistema).toHaveBeenCalled();
+    expect(result.current.toastMessage).toContain('excluído com sucesso');
+  });
+
+  it('restaura fiscal ao quadro ativo e atualiza toast', async () => {
+    const { result } = renderHook(() => useVigiMinas(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.restaurarFiscal('f-1');
+    });
+
+    expect(saveConfiguracaoSistema).toHaveBeenCalled();
+    expect(result.current.toastMessage).toContain('restaurado ao quadro ativo');
   });
 });

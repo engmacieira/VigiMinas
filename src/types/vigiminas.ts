@@ -43,8 +43,12 @@ export interface Estabelecimento {
   fiscaisUltimaInspecao?: string[];
   createdAt?: string;
   updatedAt?: string;
-  // Campos de Soft Delete
+  // Campos de Soft Delete / Arquivamento
   isDeleted?: boolean;
+  isPermanentlyDeleted?: boolean; // Excluído da visão do usuário na aba de arquivados (preservado em banco para administradores)
+  permanentlyDeletedAt?: string;
+  permanentlyDeletedBy?: string;
+  motivoExclusaoPermanente?: string;
   deletedAt?: string;
   deletedBy?: string;
   motivoExclusao?: string;
@@ -85,6 +89,11 @@ export interface FiscalSanitario {
   deletedAt?: string;
   deletedBy?: string;
   motivoExclusao?: string;
+  // Soft Delete de 2º Nível (Remoção da visão do usuário na aba de arquivados)
+  isPermanentlyDeleted?: boolean;
+  permanentlyDeletedAt?: string;
+  permanentlyDeletedBy?: string;
+  motivoExclusaoPermanente?: string;
 }
 
 export interface DadosSecretaria {
