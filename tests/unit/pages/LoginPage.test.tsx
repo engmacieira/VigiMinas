@@ -51,7 +51,8 @@ describe('LoginPage - Seleção de Usuário e Autenticação', () => {
       editarUsuario: vi.fn(),
       redefinirSenhaUsuario: vi.fn(),
       toggleAtivoUsuario: vi.fn(),
-      atualizarMeuPerfil: vi.fn()
+      atualizarMeuPerfil: vi.fn(),
+      forcarResetMaster: vi.fn()
     });
   });
 

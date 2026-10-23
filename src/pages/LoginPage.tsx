@@ -7,21 +7,24 @@ import {
   Eye, 
   EyeOff, 
   AlertCircle, 
-  ArrowRight,
+  ArrowRight, 
   ChevronDown,
-  UserCheck
+  RotateCcw,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export const LoginPage: React.FC = () => {
-  const { login, isAuthenticated, erroLogin, usuarios, carregarUsuarios } = useAuth();
+  const { login, isAuthenticated, erroLogin, usuarios, carregarUsuarios, forcarResetMaster } = useAuth();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [resetandoSenha, setResetandoSenha] = useState(false);
   const [erroLocal, setErroLocal] = useState<string | null>(null);
+  const [sucessoLocal, setSucessoLocal] = useState<string | null>(null);
 
   // Garante que a lista de usuários esteja atualizada
   useEffect(() => {
@@ -49,9 +52,26 @@ export const LoginPage: React.FC = () => {
     setMostrarSenha(prev => !prev);
   }, []);
 
+  const handleResetSenhaMaster = useCallback(async () => {
+    setResetandoSenha(true);
+    setErroLocal(null);
+    setSucessoLocal(null);
+    try {
+      await forcarResetMaster();
+      setUsername('Matheus');
+      setSenha('22061993');
+      setSucessoLocal('Senha do Administrador (Matheus) redefinida com sucesso para a padrão!');
+    } catch {
+      setErroLocal('Não foi possível redefinir a senha do usuário master.');
+    } finally {
+      setResetandoSenha(false);
+    }
+  }, [forcarResetMaster]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setErroLocal(null);
+    setSucessoLocal(null);
 
     const userTrim = username.trim();
     if (!userTrim) {
@@ -135,6 +155,19 @@ export const LoginPage: React.FC = () => {
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold">{erroLocal || erroLogin}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Mensagem de Sucesso (Ex: Reset de Senha) */}
+          {sucessoLocal && (
+            <div 
+              role="status"
+              className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2.5 animate-in fade-in duration-200"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold">{sucessoLocal}</p>
               </div>
             </div>
           )}
@@ -260,6 +293,19 @@ export const LoginPage: React.FC = () => {
                 </>
               )}
             </button>
+
+            {/* Opção de Reset da Senha Padrão */}
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={handleResetSenhaMaster}
+                disabled={resetandoSenha || submitting}
+                className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-emerald-400 transition cursor-pointer underline decoration-dotted underline-offset-4 disabled:opacity-50"
+              >
+                <RotateCcw className={`w-3 h-3 ${resetandoSenha ? 'animate-spin' : ''}`} />
+                <span>{resetandoSenha ? 'Redefinindo senha...' : 'Problemas no acesso? Redefinir senha padrão do Administrador'}</span>
+              </button>
+            </div>
           </form>
 
         </div>

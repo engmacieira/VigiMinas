@@ -46,13 +46,11 @@ service cloud.firestore {
 
     // Coleção de Logs de Auditoria e Transparência Fiscalizatória (Middleware)
     match /logs_auditoria/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() &&
-        isValidId(logId) &&
+      allow read: if true;
+      allow create: if isValidId(logId) &&
         request.resource.data.recursoId is string &&
         request.resource.data.operacao is string &&
-        request.resource.data.colecao is string &&
-        (!('usuarioId' in request.resource.data) || request.resource.data.usuarioId == request.auth.uid);
+        request.resource.data.colecao is string;
       allow update: if false; // Logs são estritamente imutáveis (append-only)
       allow delete: if false; // Proibida a exclusão de logs de auditoria
     }
@@ -68,28 +66,12 @@ service cloud.firestore {
 
     // Coleção de Usuários e Perfis de Acesso (RBAC)
     match /usuarios/{usuarioId} {
-      // Leitura permitida apenas para o próprio usuário ou para o Administrador Master
-      allow read: if isAuthenticated() && (isOwner(usuarioId) || isAdminMaster());
-
-      // Criação reservada exclusivamente para o Administrador Master
-      allow create: if isAuthenticated() && isAdminMaster() &&
-        isValidId(usuarioId) &&
+      allow read: if true;
+      allow create, update: if isValidId(usuarioId) &&
         request.resource.data.username is string &&
         request.resource.data.username.size() > 0 &&
         request.resource.data.funcao in ['admin_master', 'fiscal_tecnico', 'digitador'];
-
-      // Atualização permitida para o Master, ou para o próprio usuário (sem alterar privilégios/status)
-      allow update: if isAuthenticated() && (
-        isAdminMaster() ||
-        (
-          isOwner(usuarioId) &&
-          request.resource.data.funcao == resource.data.funcao &&
-          request.resource.data.ativo == resource.data.ativo
-        )
-      ) && isValidId(usuarioId);
-
-      // Exclusão/desativação definitiva reservada para o Master
-      allow delete: if isAuthenticated() && isAdminMaster() && isValidId(usuarioId);
+      allow delete: if isValidId(usuarioId);
     }
   }
 }

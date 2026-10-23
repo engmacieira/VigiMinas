@@ -8,7 +8,8 @@ import {
   cadastrarNovoUsuario, 
   editarUsuario as editarUsuarioService, 
   redefinirSenhaUsuario as redefinirSenhaService,
-  atualizarMeuPerfil as atualizarMeuPerfilService
+  atualizarMeuPerfil as atualizarMeuPerfilService,
+  forcarResetSenhaMaster
 } from '../services/authService';
 
 export interface AuthContextType {
@@ -26,6 +27,7 @@ export interface AuthContextType {
   redefinirSenhaUsuario: (id: string, novaSenha: string) => Promise<void>;
   toggleAtivoUsuario: (id: string) => Promise<void>;
   atualizarMeuPerfil: (dados: { nomeCompleto: string; email: string; cargo: string }, senhaAtual?: string, novaSenha?: string) => Promise<void>;
+  forcarResetMaster: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -145,6 +147,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsuarios(prev => prev.map(u => u.id === atualizado.id ? atualizado : u));
   }, [usuario]);
 
+  // Forçar Redefinição de Senha do Usuário Master (Matheus) para a senha padrão 22061993
+  const forcarResetMaster = useCallback(async () => {
+    await forcarResetSenhaMaster();
+    await carregarUsuarios();
+  }, [carregarUsuarios]);
+
   const value: AuthContextType = {
     usuario,
     isAuthenticated: !!usuario && usuario.ativo,
@@ -159,7 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     editarUsuario,
     redefinirSenhaUsuario,
     toggleAtivoUsuario,
-    atualizarMeuPerfil
+    atualizarMeuPerfil,
+    forcarResetMaster
   };
 
   return (

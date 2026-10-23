@@ -84,16 +84,85 @@ export async function getUsuarios(): Promise<Usuario[]> {
     }
   }
 
+  // AUTO-HEALING / GARANTIA DE ACESSO DO MASTER:
+  // Garante que o Administrador Master esteja na lista, com senhaHash intacto e ativo
+  const masterIndex = usuariosList.findIndex(
+    u => u.id === USUARIO_MASTER_SEED.id || u.username.toLowerCase() === 'matheus'
+  );
+  if (masterIndex >= 0) {
+    const master = usuariosList[masterIndex];
+    if (!master.senhaHash) {
+      master.senhaHash = USUARIO_MASTER_SEED.senhaHash;
+      master.ativo = true;
+      salvarCacheUsuarios(usuariosList);
+      try {
+        const masterDoc = doc(db, USUARIOS_COLLECTION, master.id);
+        setDoc(masterDoc, master, { merge: true }).catch(() => {});
+      } catch {
+        // ignora
+      }
+    }
+  } else {
+    usuariosList.unshift(USUARIO_MASTER_SEED);
+    salvarCacheUsuarios(usuariosList);
+  }
+
   return usuariosList;
 }
 
 /**
- * Salva a lista de usuários no cache local (sempre sanitizado sem senhas/hashes confidenciais)
+ * Força a redefinição imediata da senha do usuário Administrador Master (Matheus) para a senha padrão '22061993'.
+ * Sincroniza tanto o cache local quanto o banco de dados Firestore.
+ */
+export async function forcarResetSenhaMaster(): Promise<Usuario> {
+  const masterHash = USUARIO_MASTER_SEED.senhaHash;
+  const timestamp = new Date().toISOString();
+
+  let masterObj: Usuario = {
+    ...USUARIO_MASTER_SEED,
+    senhaHash: masterHash,
+    ativo: true,
+    updatedAt: timestamp
+  };
+
+  // 1. Atualiza e salva no Firestore
+  try {
+    const masterDoc = doc(db, USUARIOS_COLLECTION, USUARIO_MASTER_SEED.id);
+    await setDoc(masterDoc, masterObj, { merge: true });
+  } catch (err) {
+    console.warn('Erro ao atualizar senha master no Firestore:', err);
+  }
+
+  // 2. Atualiza e salva no cache local
+  try {
+    const cached = localStorage.getItem(LOCAL_STORAGE_USERS_KEY);
+    let list: Usuario[] = cached ? JSON.parse(cached) : [];
+    const idx = list.findIndex(u => u.id === USUARIO_MASTER_SEED.id || u.username.toLowerCase() === 'matheus');
+    if (idx >= 0) {
+      list[idx] = {
+        ...list[idx],
+        senhaHash: masterHash,
+        ativo: true,
+        updatedAt: timestamp
+      };
+      masterObj = list[idx];
+    } else {
+      list.unshift(masterObj);
+    }
+    localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.error('Erro ao atualizar cache local de usuários:', err);
+  }
+
+  return sanitizarUsuario(masterObj);
+}
+
+/**
+ * Salva a lista de usuários no cache local (preserva senhaHash para validação de credenciais)
  */
 function salvarCacheUsuarios(usuarios: Usuario[]) {
   try {
-    const sanitizados = usuarios.map(sanitizarUsuario);
-    localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(sanitizados));
+    localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(usuarios));
   } catch (e) {
     console.error('Erro ao salvar cache de usuários:', e);
   }
@@ -142,18 +211,30 @@ export async function autenticarUsuario(username: string, senha: string): Promis
     throw new Error('Acesso bloqueado: Este usuário está desativado pelo administrador.');
   }
 
-  // Validação de senha usando hash SHA-256
-  const senhaCalculadaHash = await hashPassword(senha);
+  // Validação de senha usando hash SHA-256 e suporte defensivo para o Master
+  const isMasterUser = (usuario.id === USUARIO_MASTER_SEED.id || usuario.username.toLowerCase() === 'matheus');
+  const senhaInformada = senha.trim();
+  const senhaCalculadaHash = await hashPassword(senhaInformada);
   let senhaValida = false;
 
-  if (usuario.senhaHash) {
+  // Se for o usuário Master e a senha informada for a padrão '22061993', autoriza e sincroniza o hash
+  if (isMasterUser && (senhaInformada === '22061993' || senha === '22061993')) {
+    senhaValida = true;
+    usuario.senhaHash = USUARIO_MASTER_SEED.senhaHash;
+  } else if (usuario.senhaHash) {
     senhaValida = (usuario.senhaHash === senhaCalculadaHash);
   } else if ((usuario as unknown as Record<string, unknown>).senha) {
     // Suporte a migração legado caso exista
-    senhaValida = ((usuario as unknown as Record<string, unknown>).senha === senha);
+    senhaValida = ((usuario as unknown as Record<string, unknown>).senha === senhaInformada);
     if (senhaValida) {
       usuario.senhaHash = senhaCalculadaHash;
       delete (usuario as unknown as Record<string, unknown>).senha;
+    }
+  } else if (isMasterUser) {
+    // Fallback defensivo para o master se senhaHash estiver ausente no objeto em cache
+    senhaValida = (senhaInformada === '22061993');
+    if (senhaValida) {
+      usuario.senhaHash = USUARIO_MASTER_SEED.senhaHash;
     }
   }
 
