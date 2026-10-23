@@ -22,6 +22,7 @@ import {
   OpcoesExportacao 
 } from '../types/vigiminas';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ExportarEstabelecimentosModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const ExportarEstabelecimentosModal: React.FC<ExportarEstabelecimentosMod
   estabelecimentosFiltrados = []
 }) => {
   const { estabelecimentos, exportarEstabelecimentos, configuracao } = useVigiMinas();
+  const { usuario } = useAuth();
 
   const [formato, setFormato] = useState<FormatoExportacao>('xlsx');
   const [delimitadorCsv, setDelimitadorCsv] = useState<DelimitadorCsv>(';');
@@ -70,8 +72,8 @@ export const ExportarEstabelecimentosModal: React.FC<ExportarEstabelecimentosMod
         estabelecimentosFiltrados,
         incluirMetadados,
         registrarAuditoria,
-        usuarioEmail: 'eng.macieira@gmail.com',
-        fiscalResponsavel: configuracao.fiscais.find(f => f.ativo)?.nome || 'Equipe VISA Braúnas'
+        usuarioEmail: usuario?.email || usuario?.username || 'usuario_sistema',
+        fiscalResponsavel: usuario?.nomeCompleto || configuracao.fiscais.find(f => f.ativo)?.nome || 'Equipe VISA Braúnas'
       };
 
       await exportarEstabelecimentos(opcoes);

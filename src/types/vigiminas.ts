@@ -135,8 +135,8 @@ export interface ConfiguracaoSistema {
 }
 
 export type OperacaoFirestore = 'create' | 'update' | 'delete' | 'export';
-export type ColecaoAuditada = 'estabelecimentos' | 'inspecoes_vapt' | 'configuracoes_sistema' | 'backups_exportados';
-export type TipoRegistroAuditoria = 'Estabelecimento' | 'InspecaoVapt' | 'InspecaoSanitariaRapida' | 'ConfiguracaoSistema' | 'FiscalSanitario' | 'ExportacaoBackup';
+export type ColecaoAuditada = 'estabelecimentos' | 'inspecoes_vapt' | 'configuracoes_sistema' | 'backups_exportados' | 'usuarios';
+export type TipoRegistroAuditoria = 'Estabelecimento' | 'InspecaoVapt' | 'InspecaoSanitariaRapida' | 'ConfiguracaoSistema' | 'FiscalSanitario' | 'ExportacaoBackup' | 'Usuario';
 export type AcaoAuditoria = 'Criação' | 'Edição' | 'Exclusão' | 'Inspeção Rápida' | 'Exportação';
 
 export type FormatoExportacao = 'csv' | 'xlsx' | 'xls';
@@ -162,6 +162,35 @@ export interface ResultadoExportacao {
   timestamp: string;
 }
 
+export type FuncaoUsuario = 'admin_master' | 'fiscal_tecnico' | 'digitador';
+
+export interface Usuario {
+  id: string;
+  username: string; // Login único (ex: Matheus)
+  nomeCompleto: string; // Ex: Matheus Henrique Macieira
+  cargo: string; // Ex: Coordenador
+  funcao: FuncaoUsuario; // admin_master | fiscal_tecnico | digitador
+  email: string; // Ex: matheus_macieira@hotmail.com
+  senha?: string; // Senha para autenticação
+  ativo: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  ultimoAcesso?: string;
+}
+
+export const USUARIO_MASTER_SEED: Usuario = {
+  id: 'usr-master-001',
+  username: 'Matheus',
+  nomeCompleto: 'Matheus Henrique Macieira',
+  cargo: 'Coordenador',
+  funcao: 'admin_master',
+  email: 'matheus_macieira@hotmail.com',
+  senha: '22061993',
+  ativo: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z'
+};
+
 export interface LogAuditoria {
   id: string;
   recursoId: string;
@@ -169,8 +198,12 @@ export interface LogAuditoria {
   colecao: ColecaoAuditada;
   timestamp: string; // ISO String
   usuario: string; // email ou identificação do fiscal/usuário
+  usuarioId?: string; // ID do usuário autenticado no sistema
+  nomeUsuario?: string; // Username ou Nome Completo do usuário
+  cargo?: string; // Cargo do usuário no momento da ação
   identificadorEntidade: string;
   detalhes: string;
+  alteracoes?: string | string[]; // Detalhamento de campos alterados (before / after)
   // Campos auxiliares compatíveis
   tipoRegistro: TipoRegistroAuditoria;
   acao: AcaoAuditoria;

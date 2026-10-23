@@ -246,7 +246,7 @@ export const ConfirmarExclusaoModal: React.FC<ConfirmarExclusaoModalProps> = ({
             className="min-h-[44px] px-5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
           >
             <Trash2 className="w-4 h-4" />
-            <span>{processando ? 'Arquivando...' : 'Confirmar Exclusão Lógica'}</span>
+            <span>{processando ? (isPermanentAction ? 'Excluindo...' : 'Arquivando...') : (isPermanentAction ? 'Confirmar Exclusão' : 'Confirmar Arquivamento')}</span>
           </button>
         </div>
       </div>

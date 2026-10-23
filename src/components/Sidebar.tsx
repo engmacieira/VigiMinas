@@ -19,9 +19,13 @@ import {
   Building,
   Layers,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  LogOut,
+  UserCircle,
+  KeyRound
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -47,6 +51,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
   const handleNavClick = () => {
     if (mobileOpen) {
       onCloseMobile();
+    }
+  };
+
+  const { usuario, logout, isAdminMaster } = useAuth();
+
+  const getIniciais = (nome?: string) => {
+    if (!nome) return 'US';
+    const partes = nome.trim().split(' ').filter(Boolean);
+    if (partes.length >= 2) {
+      return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+    }
+    return nome.slice(0, 2).toUpperCase();
+  };
+
+  const getFuncaoBadge = (funcao?: string) => {
+    switch (funcao) {
+      case 'admin_master':
+        return 'Admin Master';
+      case 'fiscal_tecnico':
+        return 'Fiscal / Técnico';
+      case 'digitador':
+        return 'Digitador';
+      default:
+        return 'Usuário';
     }
   };
 
@@ -366,24 +394,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
             </span>
           </div>
 
-          {/* Perfil do Usuário / Fiscal Ativo (Avatar + Mini Menu) */}
+          {/* Perfil do Usuário Autenticado (Avatar Dinâmico + Mini Menu + Logout) */}
           <div className="relative pt-1">
             <div 
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 cursor-pointer transition duration-150 select-none active:scale-[0.99]"
+              className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 cursor-pointer transition duration-150 select-none active:scale-[0.99]"
             >
-              {/* Avatar com Iniciais */}
-              <div className="w-8 h-8 rounded-lg bg-emerald-700/60 border border-emerald-500/40 text-emerald-200 font-bold text-xs flex items-center justify-center shrink-0">
-                EM
+              {/* Avatar com Iniciais Dinâmicas */}
+              <div className="w-8 h-8 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0">
+                {getIniciais(usuario?.nomeCompleto || usuario?.username)}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-white truncate">
-                  eng.macieira@gmail.com
+                  {usuario?.nomeCompleto || usuario?.username || 'Usuário'}
                 </p>
-                <p className="text-[10px] text-emerald-400 truncate flex items-center gap-1">
-                  <UserCheck className="w-3 h-3 text-emerald-400" />
-                  Fiscal Coordenador • Ativo
-                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-emerald-400 font-medium truncate">
+                    {usuario?.cargo || 'Fiscal'}
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-700 text-slate-300 font-semibold shrink-0">
+                    {getFuncaoBadge(usuario?.funcao)}
+                  </span>
+                </div>
               </div>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${userMenuOpen ? 'rotate-180' : ''}`} />
             </div>
@@ -392,30 +424,64 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
             {userMenuOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700 shadow-xl z-30 text-xs space-y-1">
                 <div className="px-2 py-1.5 border-b border-slate-700/60">
-                  <p className="font-bold text-white">Eng. Macieira</p>
-                  <p className="text-[10px] text-slate-400">Matrícula: BR-0042 • Vigilância Sanitária</p>
+                  <p className="font-bold text-white truncate">{usuario?.nomeCompleto || usuario?.username}</p>
+                  <p className="text-[10px] text-slate-400 truncate">{usuario?.email}</p>
+                  <span className="inline-block text-[9px] font-mono text-emerald-400 mt-0.5">
+                    Perfil: {getFuncaoBadge(usuario?.funcao)}
+                  </span>
                 </div>
+
                 <div 
                   onClick={() => {
-                    navigate('/configuracoes');
+                    navigate('/configuracoes?aba=perfil');
                     setUserMenuOpen(false);
                     handleNavClick();
                   }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg cursor-pointer"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg cursor-pointer transition"
                 >
-                  <Users className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Quadro de Fiscais</span>
+                  <UserCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Meu Perfil & Senha</span>
                 </div>
+
+                {isAdminMaster && (
+                  <div 
+                    onClick={() => {
+                      navigate('/configuracoes?aba=usuarios');
+                      setUserMenuOpen(false);
+                      handleNavClick();
+                    }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg cursor-pointer transition"
+                  >
+                    <Users className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Gestão de Usuários</span>
+                  </div>
+                )}
+
                 <div 
                   onClick={() => {
                     navigate('/logs-auditoria');
                     setUserMenuOpen(false);
                     handleNavClick();
                   }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg cursor-pointer"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg cursor-pointer transition"
                 >
-                  <History className="w-3.5 h-3.5 text-teal-400" />
-                  <span>Meus Registros de Auditoria</span>
+                  <History className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Trilha de Auditoria</span>
+                </div>
+
+                <div className="pt-1 border-t border-slate-700/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      logout();
+                      navigate('/login');
+                    }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-rose-300 hover:text-rose-100 hover:bg-rose-950/40 rounded-lg cursor-pointer transition font-semibold"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Sair do Sistema</span>
+                  </button>
                 </div>
               </div>
             )}

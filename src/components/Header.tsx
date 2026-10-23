@@ -22,8 +22,10 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
+import { useAuth } from '../contexts/AuthContext';
 import { CommandPalette } from './CommandPalette';
 import { ExportarEstabelecimentosModal } from './ExportarEstabelecimentosModal';
+import { User, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   onOpenMobileSidebar?: () => void;
@@ -38,6 +40,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar }) => {
     indicadores,
     configuracao
   } = useVigiMinas();
+  const { usuario, logout } = useAuth();
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -322,6 +325,40 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar }) => {
                   </div>
                 )}
               </div>
+
+              {/* Informações do Usuário Autenticado & Logout */}
+              {usuario && (
+                <div className="flex items-center gap-1.5 pl-2 ml-1 border-l border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/configuracoes?aba=perfil')}
+                    className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl hover:bg-slate-100 transition duration-150 cursor-pointer text-left group"
+                    title="Acessar Meu Perfil"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-xs ring-1 ring-emerald-800 shadow-2xs group-hover:bg-emerald-800 transition">
+                      {usuario.nomeCompleto.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                    <div className="hidden xl:block min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate leading-tight group-hover:text-emerald-700">
+                        {usuario.nomeCompleto}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate leading-tight">
+                        {usuario.cargo}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => logout()}
+                    className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition duration-150 cursor-pointer flex items-center gap-1.5 active:scale-[0.97]"
+                    title="Sair do sistema (Logout)"
+                  >
+                    <LogOut className="w-4 h-4" strokeWidth={2} />
+                    <span className="hidden sm:inline text-xs font-semibold">Sair</span>
+                  </button>
+                </div>
+              )}
 
             </div>
 

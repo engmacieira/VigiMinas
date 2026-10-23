@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Search, 
@@ -13,7 +13,14 @@ import {
   Tag,
   Database,
   Terminal,
-  Layers
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Sliders,
+  Users as UsersIcon,
+  FileText
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { AcaoAuditoria, OperacaoFirestore, ColecaoAuditada } from '../types/vigiminas';
@@ -26,6 +33,11 @@ export const LogsAuditoriaPage: React.FC = () => {
   const [filtroColecao, setFiltroColecao] = useState<string>('todas');
   const [filtroFiscal, setFiltroFiscal] = useState<string>('todos');
 
+  // Estados de Paginação
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState<number>(10);
+
+  // Filtragem dos logs
   const logsFiltrados = useMemo(() => {
     return logsAuditoria.filter(log => {
       const termo = busca.toLowerCase().trim();
@@ -34,6 +46,8 @@ export const LogsAuditoriaPage: React.FC = () => {
         log.detalhes.toLowerCase().includes(termo) ||
         log.fiscalResponsavel.toLowerCase().includes(termo) ||
         (log.usuario && log.usuario.toLowerCase().includes(termo)) ||
+        (log.nomeUsuario && log.nomeUsuario.toLowerCase().includes(termo)) ||
+        (log.cargo && log.cargo.toLowerCase().includes(termo)) ||
         log.recursoId.toLowerCase().includes(termo) ||
         (log.registroId && log.registroId.toLowerCase().includes(termo));
 
@@ -50,11 +64,26 @@ export const LogsAuditoriaPage: React.FC = () => {
 
       const matchFiscal = filtroFiscal === 'todos' || 
         log.fiscalResponsavel.includes(filtroFiscal) ||
+        (log.nomeUsuario && log.nomeUsuario.toLowerCase().includes(filtroFiscal.toLowerCase())) ||
         (log.usuario && log.usuario.toLowerCase().includes(filtroFiscal.toLowerCase()));
 
       return matchBusca && matchOperacao && matchColecao && matchFiscal;
     });
   }, [logsAuditoria, busca, filtroOperacao, filtroColecao, filtroFiscal]);
+
+  // Resetar para a primeira página quando os filtros mudam
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [busca, filtroOperacao, filtroColecao, filtroFiscal, itensPorPagina]);
+
+  // Cálculos de Paginação
+  const totalPaginas = Math.max(1, Math.ceil(logsFiltrados.length / itensPorPagina));
+  const indiceInicio = (paginaAtual - 1) * itensPorPagina;
+  const indiceFim = Math.min(indiceInicio + itensPorPagina, logsFiltrados.length);
+
+  const logsPaginados = useMemo(() => {
+    return logsFiltrados.slice(indiceInicio, indiceFim);
+  }, [logsFiltrados, indiceInicio, indiceFim]);
 
   const totalCreates = logsAuditoria.filter(l => l.operacao === 'create' || l.acao === 'Criação').length;
   const totalUpdates = logsAuditoria.filter(l => l.operacao === 'update' || l.acao === 'Edição' || l.acao === 'Inspeção Rápida').length;
@@ -134,12 +163,45 @@ export const LogsAuditoriaPage: React.FC = () => {
         </span>
       );
     }
+    if (col === 'configuracoes_sistema') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-900 border border-amber-300">
+          <Sliders className="w-3 h-3 text-amber-700" />
+          configuracoes_sistema
+        </span>
+      );
+    }
+    if (col === 'usuarios') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-900 border border-indigo-200">
+          <UsersIcon className="w-3 h-3 text-indigo-700" />
+          usuarios
+        </span>
+      );
+    }
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-teal-50 text-teal-900 border border-teal-200">
         <HardHat className="w-3 h-3 text-teal-700" />
         inspecoes_vapt
       </span>
     );
+  };
+
+  // Geração de números de página com janela deslizante
+  const getPageNumbers = () => {
+    const maxVisible = 5;
+    const pages: number[] = [];
+    let start = Math.max(1, paginaAtual - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPaginas, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
   };
 
   return (
@@ -160,7 +222,7 @@ export const LogsAuditoriaPage: React.FC = () => {
             Trilha de Auditoria & Middleware de Persistência
           </h2>
           <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Todas as operações (create/update/delete) executadas nas coleções <strong>estabelecimentos</strong> e <strong>inspecoes_vapt</strong> são capturadas automaticamente pelo middleware e gravadas de forma imutável com timestamp, ID do recurso, operação e usuário.
+            Todas as operações executadas nas coleções do sistema são capturadas automaticamente pelo middleware e gravadas de forma imutável com timestamp, ID do recurso, operação, identificação do usuário autenticado e histórico de alterações (diff).
           </p>
         </div>
 
@@ -207,7 +269,7 @@ export const LogsAuditoriaPage: React.FC = () => {
           <span className="text-2xl font-black text-rose-700 mt-1 block">
             {totalDeletes}
           </span>
-          <span className="text-[10px] text-slate-400 block mt-0.5">exclusões definitivas</span>
+          <span className="text-[10px] text-slate-400 block mt-0.5">exclusões lógicas</span>
         </div>
       </div>
 
@@ -219,7 +281,7 @@ export const LogsAuditoriaPage: React.FC = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Buscar por ID do recurso, razão social, termo VAPT, usuário ou fiscal..."
+              placeholder="Buscar por ID, razão social, termo VAPT, usuário ou fiscal..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               className="w-full h-11 pl-9 pr-4 text-xs rounded-lg border border-slate-300 focus:border-emerald-600 outline-none text-slate-800"
@@ -246,6 +308,8 @@ export const LogsAuditoriaPage: React.FC = () => {
               <option value="todas">Todas as Coleções</option>
               <option value="estabelecimentos">estabelecimentos</option>
               <option value="inspecoes_vapt">inspecoes_vapt</option>
+              <option value="configuracoes_sistema">configuracoes_sistema</option>
+              <option value="usuarios">usuarios</option>
             </select>
 
             <select
@@ -261,23 +325,42 @@ export const LogsAuditoriaPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-          <span>
-            Exibindo <strong>{logsFiltrados.length}</strong> de <strong>{logsAuditoria.length}</strong> eventos registrados
-          </span>
-          {(busca || filtroOperacao !== 'todas' || filtroColecao !== 'todas' || filtroFiscal !== 'todos') && (
-            <button
-              onClick={() => {
-                setBusca('');
-                setFiltroOperacao('todas');
-                setFiltroColecao('todas');
-                setFiltroFiscal('todos');
-              }}
-              className="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer underline text-[11px]"
-            >
-              Limpar filtros
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <span>
+              Exibindo <strong>{logsFiltrados.length === 0 ? 0 : indiceInicio + 1} a {indiceFim}</strong> de <strong>{logsFiltrados.length}</strong> eventos filtrados ({logsAuditoria.length} no total)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-slate-600 font-medium">Registros por página:</span>
+              <select
+                value={itensPorPagina}
+                onChange={(e) => setItensPorPagina(Number(e.target.value))}
+                className="h-8 px-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold cursor-pointer outline-none"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+
+            {(busca || filtroOperacao !== 'todas' || filtroColecao !== 'todas' || filtroFiscal !== 'todos') && (
+              <button
+                onClick={() => {
+                  setBusca('');
+                  setFiltroOperacao('todas');
+                  setFiltroColecao('todas');
+                  setFiltroFiscal('todos');
+                }}
+                className="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer underline text-[11px]"
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -287,24 +370,24 @@ export const LogsAuditoriaPage: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                <th className="py-3 px-4">Timestamp (UTC/Local)</th>
+                <th className="py-3 px-4">Timestamp (Local)</th>
                 <th className="py-3 px-4">Operação & Coleção</th>
                 <th className="py-3 px-4">Recurso Afetado (ID / Entidade)</th>
-                <th className="py-3 px-4">Usuário / Fiscal</th>
-                <th className="py-3 px-4">Detalhamento da Ação</th>
+                <th className="py-3 px-4">Usuário / Responsável</th>
+                <th className="py-3 px-4">Detalhamento & Modificações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {logsFiltrados.length === 0 ? (
+              {logsPaginados.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-500">
                     <History className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <p className="font-semibold text-slate-700">Nenhum evento de auditoria localizado</p>
-                    <p className="text-xs text-slate-400 mt-1">Ajuste os filtros de pesquisa.</p>
+                    <p className="text-xs text-slate-400 mt-1">Ajuste os filtros de pesquisa ou limpe a busca.</p>
                   </td>
                 </tr>
               ) : (
-                logsFiltrados.map(log => (
+                logsPaginados.map(log => (
                   <tr key={log.id} className="hover:bg-slate-50/80 transition">
                     
                     {/* Timestamp */}
@@ -314,7 +397,7 @@ export const LogsAuditoriaPage: React.FC = () => {
                         <span>{formatarDataHora(log.timestamp)}</span>
                       </div>
                       <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
-                        Log: {log.id}
+                        Log: {log.id.slice(0, 16)}...
                       </span>
                     </td>
 
@@ -333,7 +416,7 @@ export const LogsAuditoriaPage: React.FC = () => {
                           {log.identificadorEntidade}
                         </span>
                         <div className="flex items-center gap-1 text-[11px] font-mono text-slate-600">
-                          <span className="text-[10px] uppercase font-bold text-slate-400">ID Recurso:</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-400">ID:</span>
                           <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold border border-slate-200">
                             {log.recursoId || log.registroId}
                           </span>
@@ -341,26 +424,55 @@ export const LogsAuditoriaPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Usuário / Fiscal */}
+                    {/* Usuário / Responsável */}
                     <td className="py-3 px-4 align-top">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 font-semibold text-slate-800 text-xs">
                           <UserCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                          <span>{log.fiscalResponsavel || log.usuario}</span>
+                          <span>{log.nomeUsuario || log.fiscalResponsavel || log.usuario}</span>
                         </div>
-                        {log.usuario && (
-                          <span className="text-[11px] text-slate-500 font-mono block">
+                        {log.cargo && (
+                          <span className="text-[11px] text-slate-500 font-medium block">
+                            {log.cargo}
+                          </span>
+                        )}
+                        {log.usuario && log.usuario !== log.nomeUsuario && (
+                          <span className="text-[10px] text-slate-400 font-mono block">
                             {log.usuario}
                           </span>
                         )}
                       </div>
                     </td>
 
-                    {/* Detalhamento */}
+                    {/* Detalhamento e Modificações */}
                     <td className="py-3 px-4 max-w-md align-top">
-                      <p className="text-xs text-slate-700 leading-relaxed">
+                      <p className="text-xs text-slate-700 leading-relaxed font-normal">
                         {log.detalhes}
                       </p>
+                      
+                      {/* Diffs / Alterações detalhadas quando presentes */}
+                      {log.alteracoes && (
+                        (() => {
+                          const alteracoesLista = Array.isArray(log.alteracoes) 
+                            ? log.alteracoes 
+                            : (typeof log.alteracoes === 'string' ? [log.alteracoes] : []);
+                          if (alteracoesLista.length === 0) return null;
+                          return (
+                            <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px] space-y-1">
+                              <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wide">
+                                Campos Alterados:
+                              </span>
+                              <ul className="list-disc list-inside space-y-0.5 text-slate-600 font-mono text-[10px]">
+                                {alteracoesLista.map((alt, idx) => (
+                                  <li key={idx} className="truncate">
+                                    {alt}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })()
+                      )}
                     </td>
 
                   </tr>
@@ -369,6 +481,79 @@ export const LogsAuditoriaPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Rodapé de Paginação */}
+        {logsFiltrados.length > 0 && (
+          <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <span className="text-slate-600">
+              Página <strong>{paginaAtual}</strong> de <strong>{totalPaginas}</strong> (Total: {logsFiltrados.length} registros)
+            </span>
+
+            <div className="flex items-center gap-1">
+              {/* Botão Primeira Página */}
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(1)}
+                disabled={paginaAtual === 1}
+                title="Primeira Página"
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+
+              {/* Botão Página Anterior */}
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(prev => Math.max(1, prev - 1))}
+                disabled={paginaAtual === 1}
+                title="Página Anterior"
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Números de Página */}
+              <div className="flex items-center gap-1 mx-1">
+                {getPageNumbers().map(num => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setPaginaAtual(num)}
+                    className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      paginaAtual === num
+                        ? 'bg-emerald-600 text-white shadow-2xs'
+                        : 'border border-slate-200 text-slate-700 hover:bg-white hover:text-slate-900'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+
+              {/* Botão Próxima Página */}
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(prev => Math.min(totalPaginas, prev + 1))}
+                disabled={paginaAtual === totalPaginas}
+                title="Próxima Página"
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Botão Última Página */}
+              <button
+                type="button"
+                onClick={() => setPaginaAtual(totalPaginas)}
+                disabled={paginaAtual === totalPaginas}
+                title="Última Página"
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

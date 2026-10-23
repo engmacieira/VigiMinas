@@ -26,6 +26,7 @@ import {
   ResultadoParsePlanilha
 } from '../services/vigiminasService';
 import { testConnection } from '../lib/firebase';
+import { getActiveAuditUser } from '../lib/firestoreAuditMiddleware';
 import { 
   Estabelecimento, 
   InspecaoVapt, 
@@ -287,7 +288,9 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const importarLotePlanilha = useCallback(async (lista: Estabelecimento[]) => {
     setLoading(true);
     try {
-      const res = await importarEstabelecimentosEmLote(lista, 'eng.macieira@gmail.com');
+      const activeUser = getActiveAuditUser();
+      const userIdent = activeUser?.email || activeUser?.username || 'usuario_sistema';
+      const res = await importarEstabelecimentosEmLote(lista, userIdent);
       await recarregarDados();
       showToast(`Importação concluída: ${res.importados} novos e ${res.atualizados} atualizados.`);
       return res;
@@ -342,6 +345,8 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const removerFiscal = useCallback(async (fiscalId: string, motivoExclusao?: string) => {
     const fiscal = configuracao.fiscais.find(f => f.id === fiscalId);
     const timestamp = new Date().toISOString();
+    const activeUser = getActiveAuditUser();
+    const userIdent = activeUser?.email || activeUser?.username || 'usuario_sistema';
     const novaLista = configuracao.fiscais.map(f => {
       if (f.id === fiscalId) {
         return {
@@ -350,7 +355,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           isDeleted: true,
           isPermanentlyDeleted: false,
           deletedAt: timestamp,
-          deletedBy: 'eng.macieira@gmail.com',
+          deletedBy: userIdent,
           motivoExclusao: motivoExclusao || 'Exclusão lógica do quadro sanitário municipal'
         };
       }
@@ -371,6 +376,8 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const excluirPermanenteFiscal = useCallback(async (fiscalId: string, motivoExclusao?: string) => {
     const fiscal = configuracao.fiscais.find(f => f.id === fiscalId);
     const timestamp = new Date().toISOString();
+    const activeUser = getActiveAuditUser();
+    const userIdent = activeUser?.email || activeUser?.username || 'usuario_sistema';
     const novaLista = configuracao.fiscais.map(f => {
       if (f.id === fiscalId) {
         return {
@@ -379,7 +386,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           isDeleted: true,
           isPermanentlyDeleted: true,
           permanentlyDeletedAt: timestamp,
-          permanentlyDeletedBy: 'eng.macieira@gmail.com',
+          permanentlyDeletedBy: userIdent,
           motivoExclusaoPermanente: motivoExclusao || 'Exclusão definitiva solicitada na aba de arquivados'
         };
       }

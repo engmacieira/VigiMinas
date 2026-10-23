@@ -29,7 +29,8 @@ import {
   updateWithAudit,
   deleteWithAudit,
   softDeleteWithAudit,
-  restoreWithAudit
+  restoreWithAudit,
+  getActiveAuditUser
 } from '../lib/firestoreAuditMiddleware';
 import {
   SEED_ESTABELECIMENTOS,
@@ -295,7 +296,7 @@ export async function deleteEstabelecimento(
         nomeDeletado = estEncontrado.razaoSocial;
         estEncontrado.isDeleted = true;
         estEncontrado.deletedAt = timestamp;
-        estEncontrado.deletedBy = auditContext?.usuario || 'eng.macieira@gmail.com';
+        estEncontrado.deletedBy = auditContext?.usuario || getActiveAuditUser()?.email || getActiveAuditUser()?.username || 'usuario_sistema';
         estEncontrado.motivoExclusao = motivoExclusao || 'Exclusão lógica realizada pelo usuário';
       }
       localStorage.setItem(LOCAL_STORAGE_EST_KEY, JSON.stringify(list));
@@ -319,6 +320,8 @@ export async function deletePermanenteEstabelecimento(
 ): Promise<void> {
   let nomeDeletado = id;
   const timestamp = new Date().toISOString();
+  const activeUser = getActiveAuditUser();
+  const userIdent = auditContext?.usuario || activeUser?.email || activeUser?.username || 'usuario_sistema';
   try {
     const backup = localStorage.getItem(LOCAL_STORAGE_EST_KEY);
     if (backup) {
@@ -329,7 +332,7 @@ export async function deletePermanenteEstabelecimento(
         estEncontrado.isDeleted = true;
         estEncontrado.isPermanentlyDeleted = true;
         estEncontrado.permanentlyDeletedAt = timestamp;
-        estEncontrado.permanentlyDeletedBy = auditContext?.usuario || 'eng.macieira@gmail.com';
+        estEncontrado.permanentlyDeletedBy = userIdent;
         estEncontrado.motivoExclusaoPermanente = motivoExclusao || 'Exclusão definitiva solicitada na aba de arquivados';
       }
       localStorage.setItem(LOCAL_STORAGE_EST_KEY, JSON.stringify(list));
@@ -344,7 +347,7 @@ export async function deletePermanenteEstabelecimento(
       isDeleted: true,
       isPermanentlyDeleted: true,
       permanentlyDeletedAt: timestamp,
-      permanentlyDeletedBy: auditContext?.usuario || 'eng.macieira@gmail.com',
+      permanentlyDeletedBy: userIdent,
       motivoExclusaoPermanente: motivoExclusao || 'Exclusão definitiva solicitada na aba de arquivados'
     }, {
       ...auditContext,
@@ -494,7 +497,7 @@ export async function deleteInspecaoVapt(
         nomeDeletado = itemEncontrado.numeroRelatorioTermo;
         itemEncontrado.isDeleted = true;
         itemEncontrado.deletedAt = timestamp;
-        itemEncontrado.deletedBy = auditContext?.usuario || 'eng.macieira@gmail.com';
+        itemEncontrado.deletedBy = auditContext?.usuario || getActiveAuditUser()?.email || getActiveAuditUser()?.username || 'usuario_sistema';
         itemEncontrado.motivoExclusao = motivoExclusao || 'Exclusão lógica de relatório de vistoria VAPT';
       }
       localStorage.setItem(LOCAL_STORAGE_VAPT_KEY, JSON.stringify(list));
@@ -1318,8 +1321,10 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
  */
 export async function importarEstabelecimentosEmLote(
   estabelecimentos: Estabelecimento[],
-  usuarioEmail: string = 'eng.macieira@gmail.com'
+  usuarioEmail?: string
 ): Promise<{ importados: number; atualizados: number; falhas: number }> {
+  const activeUser = getActiveAuditUser();
+  const emailEfetivo = usuarioEmail || activeUser?.email || activeUser?.username || 'usuario_sistema';
   let importados = 0;
   let atualizados = 0;
   let falhas = 0;
@@ -1349,7 +1354,7 @@ export async function importarEstabelecimentosEmLote(
       };
 
       await saveEstabelecimento(payload, {
-        usuario: usuarioEmail,
+        usuario: emailEfetivo,
         fiscalResponsavel: est.fiscaisUltimaInspecao?.[0] || FISCAIS_MUNICIPIO[0],
         detalhesPersonalizados: isUpdate
           ? `Atualização cadastral em lote via planilha Excel (.xls/.xlsx). Risco: ${est.nivelRisco}.`
@@ -1378,6 +1383,7 @@ export async function exportarEstabelecimentosFormatados(
   todosEstabelecimentos: Estabelecimento[],
   opcoes: OpcoesExportacao
 ): Promise<ResultadoExportacao> {
+  const activeUser = getActiveAuditUser();
   const {
     formato = 'xlsx',
     delimitadorCsv = ';',
@@ -1385,7 +1391,7 @@ export async function exportarEstabelecimentosFormatados(
     estabelecimentosFiltrados = [],
     incluirMetadados = true,
     registrarAuditoria = true,
-    usuarioEmail = 'eng.macieira@gmail.com',
+    usuarioEmail = activeUser?.email || activeUser?.username || 'usuario_sistema',
     fiscalResponsavel = FISCAIS_MUNICIPIO[0]
   } = opcoes;
 
@@ -1618,7 +1624,7 @@ export async function limparBancoDeDados(opcoes?: OpcoesLimpezaBanco): Promise<{
     limparLogsAuditoria: true,
     manterConfiguracoes: true,
     fiscalResponsavel: FISCAIS_MUNICIPIO[0],
-    usuarioEmail: 'eng.macieira@gmail.com',
+    usuarioEmail: getActiveAuditUser()?.email || getActiveAuditUser()?.username || 'usuario_sistema',
     ...opcoes
   };
 
@@ -1693,7 +1699,7 @@ export async function limparBancoDeDados(opcoes?: OpcoesLimpezaBanco): Promise<{
       recursoId: `expurgo-${Date.now()}`,
       identificadorEntidade: `Expurgo Geral do Banco de Dados: ${estabelecimentosRemovidos} estabelecimentos, ${vaptRemovidos} VAPT, ${logsRemovidos} logs`,
       fiscalResponsavel: opt.fiscalResponsavel || FISCAIS_MUNICIPIO[0],
-      usuario: opt.usuarioEmail || 'eng.macieira@gmail.com',
+      usuario: opt.usuarioEmail || getActiveAuditUser()?.email || getActiveAuditUser()?.username || 'usuario_sistema',
       detalhes: `Comando de limpeza total do banco de dados executado pelo operador. Coleções purgadas e base zerada pronta para inserção ou importação limpa.`
     });
   } catch (e) {

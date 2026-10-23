@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Settings, 
   Users, 
@@ -25,13 +26,21 @@ import {
   Sliders,
   Database,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  UserPlus,
+  Key,
+  Lock,
+  User as UserIcon,
+  ShieldAlert,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
-import { FiscalSanitario, DadosSecretaria, ConfiguracaoExercicio } from '../types/vigiminas';
+import { useAuth } from '../contexts/AuthContext';
+import { FiscalSanitario, DadosSecretaria, ConfiguracaoExercicio, Usuario, FuncaoUsuario } from '../types/vigiminas';
 import { ConfirmarExclusaoModal } from '../components/ConfirmarExclusaoModal';
 
-type TabType = 'fiscais' | 'exercicio' | 'secretaria' | 'banco';
+type TabType = 'fiscais' | 'exercicio' | 'secretaria' | 'banco' | 'usuarios' | 'perfil';
 
 export const ConfiguracoesPage: React.FC = () => {
   const { 
@@ -54,6 +63,265 @@ export const ConfiguracoesPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>('fiscais');
   const [abaFiscais, setAbaFiscais] = useState<'ativos' | 'arquivados'>('ativos');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { 
+    usuario, 
+    isAdminMaster, 
+    usuarios, 
+    cadastrarUsuario, 
+    editarUsuario, 
+    redefinirSenhaUsuario, 
+    toggleAtivoUsuario, 
+    atualizarMeuPerfil 
+  } = useAuth();
+
+  // Sincroniza aba com query param da URL (?aba=...)
+  useEffect(() => {
+    const abaParam = searchParams.get('aba');
+    if (abaParam === 'usuarios' && isAdminMaster) {
+      setActiveTab('usuarios');
+    } else if (abaParam === 'perfil') {
+      setActiveTab('perfil');
+    } else if (abaParam && ['fiscais', 'exercicio', 'secretaria', 'banco'].includes(abaParam)) {
+      setActiveTab(abaParam as TabType);
+    }
+  }, [searchParams, isAdminMaster]);
+
+  const handleMudarAba = (novaAba: TabType) => {
+    setActiveTab(novaAba);
+    setSearchParams({ aba: novaAba });
+  };
+
+  // Estados para Gestão de Usuários (Admin Master)
+  const [modalNovoUsuarioAberto, setModalNovoUsuarioAberto] = useState(false);
+  const [modalEditarUsuarioAberto, setModalEditarUsuarioAberto] = useState(false);
+  const [usuarioEmEdicao, setUsuarioEmEdicao] = useState<Usuario | null>(null);
+  const [modalRedefinirSenhaAberto, setModalRedefinirSenhaAberto] = useState(false);
+  const [usuarioParaRedefinirSenha, setUsuarioParaRedefinirSenha] = useState<Usuario | null>(null);
+  const [novaSenhaInput, setNovaSenhaInput] = useState('');
+  const [mostrarSenhaModal, setMostrarSenhaModal] = useState(false);
+  const [erroUsuarioModal, setErroUsuarioModal] = useState<string | null>(null);
+  const [sucessoUsuarioModal, setSucessoUsuarioModal] = useState<string | null>(null);
+  const [salvandoUsuario, setSalvandoUsuario] = useState(false);
+
+  const [novoUsuarioForm, setNovoUsuarioForm] = useState({
+    username: '',
+    nomeCompleto: '',
+    cargo: 'Fiscal Sanitário Municipal',
+    email: '',
+    senha: '',
+    funcao: 'fiscal_tecnico' as FuncaoUsuario,
+    ativo: true
+  });
+
+  const [editarUsuarioForm, setEditarUsuarioForm] = useState({
+    nomeCompleto: '',
+    cargo: '',
+    email: '',
+    funcao: 'fiscal_tecnico' as FuncaoUsuario,
+    ativo: true
+  });
+
+  // Estados para Meu Perfil
+  const [perfilForm, setPerfilForm] = useState({
+    nomeCompleto: usuario?.nomeCompleto || '',
+    email: usuario?.email || '',
+    cargo: usuario?.cargo || ''
+  });
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenhaPerfil, setNovaSenhaPerfil] = useState('');
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState('');
+  const [mostrarSenhaPerfil, setMostrarSenhaPerfil] = useState(false);
+  const [salvandoPerfil, setSalvandoPerfil] = useState(false);
+  const [feedbackPerfil, setFeedbackPerfil] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+
+  useEffect(() => {
+    if (usuario) {
+      setPerfilForm({
+        nomeCompleto: usuario.nomeCompleto,
+        email: usuario.email,
+        cargo: usuario.cargo
+      });
+    }
+  }, [usuario?.id, usuario?.nomeCompleto, usuario?.email, usuario?.cargo]);
+
+  // Handlers de Usuários
+  const handleAbrirNovoUsuario = () => {
+    setNovoUsuarioForm({
+      username: '',
+      nomeCompleto: '',
+      cargo: 'Fiscal Sanitário Municipal',
+      email: '',
+      senha: '',
+      funcao: 'fiscal_tecnico',
+      ativo: true
+    });
+    setErroUsuarioModal(null);
+    setSucessoUsuarioModal(null);
+    setMostrarSenhaModal(false);
+    setModalNovoUsuarioAberto(true);
+  };
+
+  const handleSalvarNovoUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErroUsuarioModal(null);
+    if (!novoUsuarioForm.username.trim()) {
+      setErroUsuarioModal('O nome de usuário (username) é obrigatório.');
+      return;
+    }
+    if (!novoUsuarioForm.nomeCompleto.trim()) {
+      setErroUsuarioModal('O nome completo é obrigatório.');
+      return;
+    }
+    if (!novoUsuarioForm.email.trim()) {
+      setErroUsuarioModal('O e-mail é obrigatório.');
+      return;
+    }
+    if (!novoUsuarioForm.senha || novoUsuarioForm.senha.length < 6) {
+      setErroUsuarioModal('A senha inicial deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    setSalvandoUsuario(true);
+    try {
+      await cadastrarUsuario(novoUsuarioForm);
+      setModalNovoUsuarioAberto(false);
+    } catch (err: any) {
+      setErroUsuarioModal(err.message || 'Erro ao cadastrar novo usuário.');
+    } finally {
+      setSalvandoUsuario(false);
+    }
+  };
+
+  const handleAbrirEditarUsuario = (u: Usuario) => {
+    setUsuarioEmEdicao(u);
+    setEditarUsuarioForm({
+      nomeCompleto: u.nomeCompleto,
+      cargo: u.cargo,
+      email: u.email,
+      funcao: u.funcao,
+      ativo: u.ativo
+    });
+    setErroUsuarioModal(null);
+    setModalEditarUsuarioAberto(true);
+  };
+
+  const handleSalvarEdicaoUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioEmEdicao) return;
+    setErroUsuarioModal(null);
+
+    if (!editarUsuarioForm.nomeCompleto.trim()) {
+      setErroUsuarioModal('O nome completo é obrigatório.');
+      return;
+    }
+    if (!editarUsuarioForm.email.trim()) {
+      setErroUsuarioModal('O e-mail é obrigatório.');
+      return;
+    }
+
+    setSalvandoUsuario(true);
+    try {
+      await editarUsuario(usuarioEmEdicao.id, editarUsuarioForm);
+      setModalEditarUsuarioAberto(false);
+      setUsuarioEmEdicao(null);
+    } catch (err: any) {
+      setErroUsuarioModal(err.message || 'Erro ao atualizar dados do usuário.');
+    } finally {
+      setSalvandoUsuario(false);
+    }
+  };
+
+  const handleAbrirRedefinirSenha = (u: Usuario) => {
+    setUsuarioParaRedefinirSenha(u);
+    setNovaSenhaInput('');
+    setErroUsuarioModal(null);
+    setMostrarSenhaModal(false);
+    setModalRedefinirSenhaAberto(true);
+  };
+
+  const handleSalvarRedefinicaoSenha = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioParaRedefinirSenha) return;
+    setErroUsuarioModal(null);
+
+    if (!novaSenhaInput || novaSenhaInput.length < 6) {
+      setErroUsuarioModal('A nova senha deve possuir no mínimo 6 caracteres.');
+      return;
+    }
+
+    setSalvandoUsuario(true);
+    try {
+      await redefinirSenhaUsuario(usuarioParaRedefinirSenha.id, novaSenhaInput);
+      setModalRedefinirSenhaAberto(false);
+      setUsuarioParaRedefinirSenha(null);
+    } catch (err: any) {
+      setErroUsuarioModal(err.message || 'Erro ao redefinir senha do usuário.');
+    } finally {
+      setSalvandoUsuario(false);
+    }
+  };
+
+  const handleAlternarStatusUsuario = async (u: Usuario) => {
+    if (u.id === usuario?.id && u.funcao === 'admin_master') {
+      alert('Você não pode desativar seu próprio usuário administrador master.');
+      return;
+    }
+    try {
+      await toggleAtivoUsuario(u.id);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao alterar status do usuário.');
+    }
+  };
+
+  // Handler de Meu Perfil
+  const handleSalvarMeuPerfil = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedbackPerfil(null);
+
+    if (!perfilForm.nomeCompleto.trim()) {
+      setFeedbackPerfil({ tipo: 'erro', texto: 'O nome completo é obrigatório.' });
+      return;
+    }
+    if (!perfilForm.email.trim()) {
+      setFeedbackPerfil({ tipo: 'erro', texto: 'O e-mail é obrigatório.' });
+      return;
+    }
+
+    // Se preencheu nova senha, valida
+    if (novaSenhaPerfil) {
+      if (!senhaAtual) {
+        setFeedbackPerfil({ tipo: 'erro', texto: 'Para alterar sua senha, digite a senha atual.' });
+        return;
+      }
+      if (novaSenhaPerfil.length < 6) {
+        setFeedbackPerfil({ tipo: 'erro', texto: 'A nova senha deve possuir pelo menos 6 caracteres.' });
+        return;
+      }
+      if (novaSenhaPerfil !== confirmarNovaSenha) {
+        setFeedbackPerfil({ tipo: 'erro', texto: 'A confirmação de senha não confere com a nova senha.' });
+        return;
+      }
+    }
+
+    setSalvandoPerfil(true);
+    try {
+      await atualizarMeuPerfil(
+        perfilForm, 
+        novaSenhaPerfil ? senhaAtual : undefined, 
+        novaSenhaPerfil ? novaSenhaPerfil : undefined
+      );
+      setSenhaAtual('');
+      setNovaSenhaPerfil('');
+      setConfirmarNovaSenha('');
+      setFeedbackPerfil({ tipo: 'sucesso', texto: 'Seu perfil foi atualizado com sucesso!' });
+    } catch (err: any) {
+      setFeedbackPerfil({ tipo: 'erro', texto: err.message || 'Erro ao atualizar dados do perfil.' });
+    } finally {
+      setSalvandoPerfil(false);
+    }
+  };
 
   // Estado para confirmação de soft delete de fiscal (arquivamento ou exclusão permanente da lista)
   const [modalExcluirFiscalAberto, setModalExcluirFiscalAberto] = useState(false);
@@ -282,7 +550,7 @@ export const ConfiguracoesPage: React.FC = () => {
       <div className="flex border-b border-slate-200 bg-white rounded-t-xl px-3 pt-2 gap-2 shadow-2xs overflow-x-auto no-scrollbar">
         
         <button
-          onClick={() => setActiveTab('fiscais')}
+          onClick={() => handleMudarAba('fiscais')}
           className={`min-h-[44px] px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
             activeTab === 'fiscais'
               ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
@@ -297,7 +565,7 @@ export const ConfiguracoesPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('exercicio')}
+          onClick={() => handleMudarAba('exercicio')}
           className={`min-h-[44px] px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
             activeTab === 'exercicio'
               ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
@@ -312,7 +580,7 @@ export const ConfiguracoesPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('secretaria')}
+          onClick={() => handleMudarAba('secretaria')}
           className={`min-h-[44px] px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
             activeTab === 'secretaria'
               ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
@@ -324,7 +592,7 @@ export const ConfiguracoesPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('banco')}
+          onClick={() => handleMudarAba('banco')}
           className={`min-h-[44px] px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
             activeTab === 'banco'
               ? 'border-rose-600 text-rose-800 bg-rose-50/50 rounded-t-lg'
@@ -338,6 +606,42 @@ export const ConfiguracoesPage: React.FC = () => {
           }`}>
             {estabelecimentos.length === 0 ? 'Base Limpa' : `${estabelecimentos.length} reg.`}
           </span>
+        </button>
+
+        {/* Aba Exclusiva: Gestão de Usuários (Apenas Administrador Master) */}
+        {isAdminMaster && (
+          <button
+            onClick={() => handleMudarAba('usuarios')}
+            className={`min-h-[44px] px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
+              activeTab === 'usuarios'
+                ? 'border-indigo-600 text-indigo-900 bg-indigo-50/60 rounded-t-lg'
+                : 'border-transparent text-slate-500 hover:text-indigo-800'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+            <span>Gestão de Usuários</span>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800">
+              {usuarios.length}
+            </span>
+          </button>
+        )}
+
+        {/* Aba Perfil do Usuário Autenticado */}
+        <button
+          onClick={() => handleMudarAba('perfil')}
+          className={`min-h-[44px] px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ml-auto ${
+            activeTab === 'perfil'
+              ? 'border-emerald-600 text-emerald-900 bg-emerald-50/60 rounded-t-lg'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <UserIcon className="w-4 h-4 text-emerald-600" />
+          <span>Meu Perfil</span>
+          {usuario && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
+              @{usuario.username}
+            </span>
+          )}
         </button>
 
       </div>
@@ -1234,6 +1538,363 @@ export const ConfiguracoesPage: React.FC = () => {
         </div>
       )}
 
+      {/* CONTEÚDO DA ABA 5: GESTÃO DE USUÁRIOS (EXCLUSIVO ADMIN MASTER) */}
+      {activeTab === 'usuarios' && isAdminMaster && (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1 rounded bg-indigo-100 text-indigo-700">
+                  <ShieldCheck className="w-4 h-4" />
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Gestão de Usuários e Perfis de Acesso (RBAC)
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Controle exclusivo do Administrador Master para cadastrar técnicos, conceder permissões e gerenciar acessos do VigiMinas.
+              </p>
+            </div>
+
+            <button
+              onClick={handleAbrirNovoUsuario}
+              className="min-h-[44px] px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition duration-150 ease-out flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-97"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Novo Usuário</span>
+            </button>
+          </div>
+
+          {/* Tabela de Usuários Cadastrados */}
+          <div className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs">
+            <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800">
+                Usuários Registrados no Sistema
+              </span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {usuarios.length} cadastrado(s)
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-4">Usuário</th>
+                    <th className="py-3 px-4">Cargo</th>
+                    <th className="py-3 px-4">Função / Perfil</th>
+                    <th className="py-3 px-4">E-mail</th>
+                    <th className="py-3 px-4 text-center">Status</th>
+                    <th className="py-3 px-4">Último Acesso</th>
+                    <th className="py-3 px-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {usuarios.map((u) => {
+                    const isSelf = u.id === usuario?.id;
+                    return (
+                      <tr key={u.id} className="hover:bg-slate-50/60 transition">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center text-xs shrink-0 border border-indigo-200">
+                              {u.nomeCompleto.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                                {u.nomeCompleto}
+                                {isSelf && (
+                                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded border border-emerald-200">
+                                    Você
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[11px] font-mono text-slate-500">
+                                @{u.username}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4 text-slate-700 font-medium">
+                          {u.cargo}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {u.funcao === 'admin_master' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                              <ShieldCheck className="w-3 h-3 text-purple-600" />
+                              Administrador Master
+                            </span>
+                          ) : u.funcao === 'fiscal_tecnico' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              <UserCheck className="w-3 h-3 text-emerald-600" />
+                              Fiscal / Técnico VISA
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-200">
+                              <FileText className="w-3 h-3 text-sky-600" />
+                              Digitador
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                          {u.email}
+                        </td>
+
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleAlternarStatusUsuario(u)}
+                            disabled={isSelf && u.funcao === 'admin_master'}
+                            title={isSelf ? 'Você não pode inativar seu próprio acesso' : u.ativo ? 'Clique para inativar' : 'Clique para ativar'}
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase transition cursor-pointer border ${
+                              u.ativo
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            } ${isSelf && u.funcao === 'admin_master' ? 'opacity-70 cursor-not-allowed' : ''}`}
+                          >
+                            {u.ativo ? 'Ativo' : 'Inativo'}
+                          </button>
+                        </td>
+
+                        <td className="py-3 px-4 text-slate-500 text-[11px] font-mono">
+                          {u.ultimoAcesso ? new Date(u.ultimoAcesso).toLocaleString('pt-BR') : 'Nunca acessou'}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleAbrirEditarUsuario(u)}
+                              title="Editar dados cadastrais"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 transition cursor-pointer"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAbrirRedefinirSenha(u)}
+                              title="Redefinir senha de acesso"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-amber-700 hover:bg-amber-50 transition cursor-pointer"
+                            >
+                              <Key className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTEÚDO DA ABA 6: MEU PERFIL */}
+      {activeTab === 'perfil' && (
+        <div className="max-w-3xl space-y-5">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-lg ring-2 ring-emerald-600/30 shadow-xs">
+                {usuario?.nomeCompleto.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {usuario?.nomeCompleto}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  @{usuario?.username} • {usuario?.cargo}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${
+                usuario?.funcao === 'admin_master'
+                  ? 'bg-purple-50 text-purple-800 border-purple-200'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              }`}>
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {usuario?.funcao === 'admin_master' ? 'Administrador Master' : usuario?.funcao === 'fiscal_tecnico' ? 'Fiscal / Técnico' : 'Digitador'}
+              </span>
+            </div>
+          </div>
+
+          {feedbackPerfil && (
+            <div className={`p-4 rounded-xl border text-xs flex items-center gap-2 ${
+              feedbackPerfil.tipo === 'sucesso'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : 'bg-rose-50 border-rose-200 text-rose-900'
+            }`}>
+              {feedbackPerfil.tipo === 'sucesso' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span className="font-medium">{feedbackPerfil.texto}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSalvarMeuPerfil} className="bg-white rounded-xl border border-slate-200 shadow-2xs divide-y divide-slate-100">
+            {/* Seção 1: Dados Pessoais */}
+            <div className="p-5 space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                <UserIcon className="w-4 h-4 text-emerald-700" />
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  Dados Pessoais e Funcionais
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nome de Usuário (Username)
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={usuario?.username || ''}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 font-mono text-xs cursor-not-allowed"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">O nome de usuário não pode ser alterado.</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Função no Sistema
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={usuario?.funcao === 'admin_master' ? 'Administrador Master' : usuario?.funcao === 'fiscal_tecnico' ? 'Fiscal / Técnico VISA' : 'Digitador'}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 text-xs cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={perfilForm.nomeCompleto}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, nomeCompleto: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    E-mail Institucional *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={perfilForm.email}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, email: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Cargo / Atribuição *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={perfilForm.cargo}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, cargo: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Seção 2: Alteração de Senha */}
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-emerald-700" />
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                    Alterar Senha de Acesso
+                  </h4>
+                </div>
+                <span className="text-[11px] text-slate-400">Opcional - preencha apenas para modificar</span>
+              </div>
+
+              <div className="space-y-3 max-w-lg">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Senha Atual
+                  </label>
+                  <input
+                    type={mostrarSenhaPerfil ? 'text' : 'password'}
+                    value={senhaAtual}
+                    onChange={(e) => setSenhaAtual(e.target.value)}
+                    placeholder="Digite sua senha atual para confirmar a alteração"
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Nova Senha
+                    </label>
+                    <input
+                      type={mostrarSenhaPerfil ? 'text' : 'password'}
+                      value={novaSenhaPerfil}
+                      onChange={(e) => setNovaSenhaPerfil(e.target.value)}
+                      placeholder="Mínimo 6 dígitos"
+                      className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Confirmar Nova Senha
+                    </label>
+                    <input
+                      type={mostrarSenhaPerfil ? 'text' : 'password'}
+                      value={confirmarNovaSenha}
+                      onChange={(e) => setConfirmarNovaSenha(e.target.value)}
+                      placeholder="Repita a nova senha"
+                      className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <label className="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={mostrarSenhaPerfil}
+                    onChange={(e) => setMostrarSenhaPerfil(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                  />
+                  <span>Visualizar senhas digitadas</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Rodapé de Ação */}
+            <div className="p-4 bg-slate-50/70 flex items-center justify-end">
+              <button
+                type="submit"
+                disabled={salvandoPerfil}
+                className="min-h-[44px] px-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-97 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                <span>{salvandoPerfil ? 'Salvando...' : 'Salvar Alterações do Meu Perfil'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* MODAL DE CADASTRO / EDIÇÃO DE FISCAL */}
       {modalFiscalAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-2xs overflow-y-auto">
@@ -1380,6 +2041,369 @@ export const ConfiguracoesPage: React.FC = () => {
 
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE NOVO USUÁRIO (ADMIN MASTER) */}
+      {modalNovoUsuarioAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-2xs overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl border border-slate-200 overflow-hidden my-8">
+            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-sm sm:text-base">
+                  Cadastrar Novo Usuário
+                </h3>
+              </div>
+              <button
+                onClick={() => setModalNovoUsuarioAberto(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarNovoUsuario} className="p-5 space-y-4">
+              {erroUsuarioModal && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{erroUsuarioModal}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nome de Usuário (Username) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ex: lucas_silveira"
+                    value={novoUsuarioForm.username}
+                    onChange={(e) => setNovoUsuarioForm({ ...novoUsuarioForm, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 font-mono text-xs"
+                  />
+                  <span className="text-[10px] text-slate-400">Usado para login (letras/números)</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Função / Perfil no Sistema *
+                  </label>
+                  <select
+                    value={novoUsuarioForm.funcao}
+                    onChange={(e) => setNovoUsuarioForm({ ...novoUsuarioForm, funcao: e.target.value as FuncaoUsuario })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs bg-white font-medium text-slate-800"
+                  >
+                    <option value="admin_master">Administrador Master</option>
+                    <option value="fiscal_tecnico">Fiscal / Técnico VISA</option>
+                    <option value="digitador">Digitador / Administrativo</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ex: Lucas Silveira Martins"
+                    value={novoUsuarioForm.nomeCompleto}
+                    onChange={(e) => setNovoUsuarioForm({ ...novoUsuarioForm, nomeCompleto: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    E-mail Institucional *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="lucas@braunas.mg.gov.br"
+                    value={novoUsuarioForm.email}
+                    onChange={(e) => setNovoUsuarioForm({ ...novoUsuarioForm, email: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Cargo / Atribuição *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ex: Fiscal Sanitário Municipal"
+                    value={novoUsuarioForm.cargo}
+                    onChange={(e) => setNovoUsuarioForm({ ...novoUsuarioForm, cargo: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Senha Inicial de Acesso *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={mostrarSenhaModal ? 'text' : 'password'}
+                      required
+                      placeholder="Mínimo 6 dígitos"
+                      value={novoUsuarioForm.senha}
+                      onChange={(e) => setNovoUsuarioForm({ ...novoUsuarioForm, senha: e.target.value })}
+                      className="w-full h-10 px-3 pr-10 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarSenhaModal(!mostrarSenhaModal)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {mostrarSenhaModal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={novoUsuarioForm.ativo}
+                    onChange={(e) => setNovoUsuarioForm({ ...novoUsuarioForm, ativo: e.target.checked })}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                  />
+                  <span className="text-xs font-bold text-slate-800">
+                    Usuário Ativo (habilitado a acessar o sistema imediatamente)
+                  </span>
+                </label>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalNovoUsuarioAberto(false)}
+                  className="min-h-[44px] px-4 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={salvandoUsuario}
+                  className="min-h-[44px] px-5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-97 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{salvandoUsuario ? 'Cadastrando...' : 'Cadastrar Usuário'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE EDIÇÃO DE USUÁRIO (ADMIN MASTER) */}
+      {modalEditarUsuarioAberto && usuarioEmEdicao && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-2xs overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl border border-slate-200 overflow-hidden my-8">
+            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-sm sm:text-base">
+                  Editar Usuário: @{usuarioEmEdicao.username}
+                </h3>
+              </div>
+              <button
+                onClick={() => setModalEditarUsuarioAberto(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarEdicaoUsuario} className="p-5 space-y-4">
+              {erroUsuarioModal && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{erroUsuarioModal}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editarUsuarioForm.nomeCompleto}
+                    onChange={(e) => setEditarUsuarioForm({ ...editarUsuarioForm, nomeCompleto: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    E-mail Institucional *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editarUsuarioForm.email}
+                    onChange={(e) => setEditarUsuarioForm({ ...editarUsuarioForm, email: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Cargo / Atribuição *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editarUsuarioForm.cargo}
+                    onChange={(e) => setEditarUsuarioForm({ ...editarUsuarioForm, cargo: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Função no Sistema *
+                  </label>
+                  <select
+                    value={editarUsuarioForm.funcao}
+                    disabled={usuarioEmEdicao.id === usuario?.id && usuarioEmEdicao.funcao === 'admin_master'}
+                    onChange={(e) => setEditarUsuarioForm({ ...editarUsuarioForm, funcao: e.target.value as FuncaoUsuario })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs bg-white font-medium text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="admin_master">Administrador Master</option>
+                    <option value="fiscal_tecnico">Fiscal / Técnico VISA</option>
+                    <option value="digitador">Digitador / Administrativo</option>
+                  </select>
+                  {usuarioEmEdicao.id === usuario?.id && (
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">Você não pode remover seu próprio perfil de Administrador Master.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editarUsuarioForm.ativo}
+                    disabled={usuarioEmEdicao.id === usuario?.id && usuarioEmEdicao.funcao === 'admin_master'}
+                    onChange={(e) => setEditarUsuarioForm({ ...editarUsuarioForm, ativo: e.target.checked })}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 disabled:opacity-50"
+                  />
+                  <span className="text-xs font-bold text-slate-800">
+                    Usuário Ativo no Sistema
+                  </span>
+                </label>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalEditarUsuarioAberto(false)}
+                  className="min-h-[44px] px-4 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={salvandoUsuario}
+                  className="min-h-[44px] px-5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-97 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{salvandoUsuario ? 'Salvando...' : 'Salvar Alterações'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE REDEFINIÇÃO DE SENHA (ADMIN MASTER) */}
+      {modalRedefinirSenhaAberto && usuarioParaRedefinirSenha && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-2xs overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-2xl border border-slate-200 overflow-hidden my-8">
+            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-sm sm:text-base">
+                  Redefinir Senha
+                </h3>
+              </div>
+              <button
+                onClick={() => setModalRedefinirSenhaAberto(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarRedefinicaoSenha} className="p-5 space-y-4">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900">
+                <p className="font-bold">Usuário: {usuarioParaRedefinirSenha.nomeCompleto} (@{usuarioParaRedefinirSenha.username})</p>
+                <p className="text-[11px] text-amber-800 mt-0.5">
+                  A nova senha entrará em vigor imediatamente para este usuário.
+                </p>
+              </div>
+
+              {erroUsuarioModal && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{erroUsuarioModal}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nova Senha *
+                </label>
+                <div className="relative">
+                  <input
+                    type={mostrarSenhaModal ? 'text' : 'password'}
+                    required
+                    placeholder="Mínimo 6 dígitos"
+                    value={novaSenhaInput}
+                    onChange={(e) => setNovaSenhaInput(e.target.value)}
+                    className="w-full h-10 px-3 pr-10 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenhaModal(!mostrarSenhaModal)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {mostrarSenhaModal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalRedefinirSenhaAberto(false)}
+                  className="min-h-[44px] px-4 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={salvandoUsuario}
+                  className="min-h-[44px] px-5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-97 disabled:opacity-50"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>{salvandoUsuario ? 'Redefinindo...' : 'Salvar Nova Senha'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

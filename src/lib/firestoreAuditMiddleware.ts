@@ -18,8 +18,39 @@ import {
 const LOGS_AUDITORIA_COLLECTION = 'logs_auditoria';
 const LOCAL_STORAGE_LOGS_KEY = 'vigiminas_braunas_logs_backup';
 
+export interface AuditActiveUser {
+  id: string;
+  username: string;
+  nomeCompleto: string;
+  cargo: string;
+  email: string;
+}
+
+let _activeAuditUser: AuditActiveUser | null = null;
+
+export function setActiveAuditUser(user: AuditActiveUser | null) {
+  _activeAuditUser = user;
+}
+
+export function getActiveAuditUser(): AuditActiveUser | null {
+  if (_activeAuditUser) return _activeAuditUser;
+  try {
+    const cached = localStorage.getItem('vigiminas_active_user');
+    if (cached) {
+      _activeAuditUser = JSON.parse(cached);
+      return _activeAuditUser;
+    }
+  } catch {
+    // fallback silencioso
+  }
+  return null;
+}
+
 export interface AuditContextInfo {
   usuario?: string;
+  usuarioId?: string;
+  nomeUsuario?: string;
+  cargo?: string;
   fiscalResponsavel?: string;
   detalhesPersonalizados?: string;
 }
@@ -30,6 +61,15 @@ export interface AuditContextInfo {
 export function getActiveUserIdentifier(contextOverride?: AuditContextInfo, fallbackFiscal?: string): string {
   if (contextOverride?.usuario) {
     return contextOverride.usuario;
+  }
+  if (contextOverride?.nomeUsuario) {
+    return contextOverride.cargo 
+      ? `${contextOverride.nomeUsuario} (${contextOverride.cargo})`
+      : contextOverride.nomeUsuario;
+  }
+  const activeUser = getActiveAuditUser();
+  if (activeUser) {
+    return `${activeUser.nomeCompleto} (${activeUser.cargo})`;
   }
   if (auth.currentUser?.email) {
     return auth.currentUser.email;
@@ -43,7 +83,7 @@ export function getActiveUserIdentifier(contextOverride?: AuditContextInfo, fall
   if (fallbackFiscal) {
     return fallbackFiscal;
   }
-  return 'eng.macieira@gmail.com (Fiscal VISA)';
+  return 'Fiscal VISA';
 }
 
 /**
@@ -99,10 +139,12 @@ export async function createWithAudit<T extends DocumentData>(
     (data as any)?.nomeLocalTrabalho || 
     docId;
 
+  const activeUser = getActiveAuditUser();
   const fiscal = auditContext?.fiscalResponsavel || 
     (data as any)?.fiscaisUltimaInspecao?.[0] || 
     (data as any)?.fiscaisResponsaveis?.[0] || 
-    'Lucas Silveira';
+    activeUser?.nomeCompleto ||
+    'Fiscal VISA';
 
   const usuario = getActiveUserIdentifier(auditContext, fiscal);
 
@@ -121,6 +163,9 @@ export async function createWithAudit<T extends DocumentData>(
     colecao,
     tipoRegistro,
     usuario,
+    usuarioId: auditContext?.usuarioId || activeUser?.id,
+    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
+    cargo: auditContext?.cargo || activeUser?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: String(identificador),
     detalhes: auditContext?.detalhesPersonalizados || `Criação de registro em ${colecao} (ID: ${docId}).`,
@@ -170,11 +215,13 @@ export async function updateWithAudit<T extends DocumentData>(
     (snapshotAnterior as any)?.numeroRelatorioTermo || 
     docId;
 
+  const activeUser = getActiveAuditUser();
   const fiscal = auditContext?.fiscalResponsavel || 
     (data as any)?.fiscaisUltimaInspecao?.[0] || 
     (snapshotAnterior as any)?.fiscaisUltimaInspecao?.[0] || 
     (data as any)?.fiscaisResponsaveis?.[0] || 
-    'Lucas Silveira';
+    activeUser?.nomeCompleto ||
+    'Fiscal VISA';
 
   const usuario = getActiveUserIdentifier(auditContext, fiscal);
 
@@ -184,11 +231,32 @@ export async function updateWithAudit<T extends DocumentData>(
       ? 'ConfiguracaoSistema'
       : 'InspecaoVapt';
 
-  // Monta resumo das alterações
+  // Monta resumo detalhado das alterações before/after
+  const diffs: string[] = [];
+  if (snapshotAnterior) {
+    for (const key of Object.keys(data)) {
+      if (key === 'updatedAt' || key === 'createdAt') continue;
+      const ant = (snapshotAnterior as any)[key];
+      const nov = (data as any)[key];
+      if (JSON.stringify(ant) !== JSON.stringify(nov)) {
+        const formatVal = (v: any) => {
+          if (v === undefined || v === null || v === '') return 'vazio';
+          if (typeof v === 'object') return JSON.stringify(v);
+          return String(v);
+        };
+        diffs.push(`${key}: "${formatVal(ant)}" → "${formatVal(nov)}"`);
+      }
+    }
+  }
+
+  const alteracoesStr = diffs.length > 0 ? diffs.join('; ') : undefined;
+
   let detalhes = auditContext?.detalhesPersonalizados;
   if (!detalhes) {
     const chavesModificadas = Object.keys(data).filter(k => k !== 'updatedAt');
-    detalhes = `Atualização de ${chavesModificadas.length} campo(s) em ${colecao} [${chavesModificadas.slice(0, 4).join(', ')}].`;
+    detalhes = diffs.length > 0
+      ? `Atualização em ${colecao}: ${diffs.slice(0, 3).join('; ')}${diffs.length > 3 ? ` (+${diffs.length - 3} campos)` : ''}.`
+      : `Atualização de ${chavesModificadas.length} campo(s) em ${colecao}.`;
   }
 
   const logPayload: LogAuditoria = {
@@ -200,9 +268,13 @@ export async function updateWithAudit<T extends DocumentData>(
     colecao,
     tipoRegistro,
     usuario,
+    usuarioId: auditContext?.usuarioId || activeUser?.id,
+    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
+    cargo: auditContext?.cargo || activeUser?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: String(identificador),
     detalhes,
+    alteracoes: alteracoesStr,
     timestamp,
     createdAt: timestamp
   };
@@ -224,7 +296,8 @@ export async function softDeleteWithAudit(
   const timestamp = new Date().toISOString();
   const docRef = doc(db, colecao, docId);
 
-  const fiscal = auditContext?.fiscalResponsavel || 'Lucas Silveira';
+  const activeUser = getActiveAuditUser();
+  const fiscal = auditContext?.fiscalResponsavel || activeUser?.nomeCompleto || 'Fiscal VISA';
   const usuario = getActiveUserIdentifier(auditContext, fiscal);
 
   // Executa exclusão lógica com merge para preservar campos intactos
@@ -251,6 +324,9 @@ export async function softDeleteWithAudit(
     colecao,
     tipoRegistro,
     usuario,
+    usuarioId: auditContext?.usuarioId || activeUser?.id,
+    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
+    cargo: auditContext?.cargo || activeUser?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: identificadorEntidade || docId,
     detalhes: auditContext?.detalhesPersonalizados || 
@@ -274,7 +350,8 @@ export async function restoreWithAudit(
   const timestamp = new Date().toISOString();
   const docRef = doc(db, colecao, docId);
 
-  const fiscal = auditContext?.fiscalResponsavel || 'Lucas Silveira';
+  const activeUser = getActiveAuditUser();
+  const fiscal = auditContext?.fiscalResponsavel || activeUser?.nomeCompleto || 'Fiscal VISA';
   const usuario = getActiveUserIdentifier(auditContext, fiscal);
 
   // Restaura o registro desmarcando isDeleted
@@ -301,6 +378,9 @@ export async function restoreWithAudit(
     colecao,
     tipoRegistro,
     usuario,
+    usuarioId: auditContext?.usuarioId || activeUser?.id,
+    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
+    cargo: auditContext?.cargo || activeUser?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: identificadorEntidade || docId,
     detalhes: auditContext?.detalhesPersonalizados || 

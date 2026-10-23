@@ -48,5 +48,15 @@ service cloud.firestore {
         request.resource.data.exercicioAtivo is map;
       allow delete: if false; // Configurações gerais não devem ser deletadas
     }
+
+    // Coleção de Usuários e Perfis de Acesso (RBAC)
+    match /usuarios/{usuarioId} {
+      allow read: if true;
+      allow create, update: if isValidId(usuarioId) &&
+        request.resource.data.username is string &&
+        request.resource.data.username.size() > 0 &&
+        request.resource.data.funcao in ['admin_master', 'fiscal_tecnico', 'digitador'];
+      allow delete: if isValidId(usuarioId);
+    }
   }
 }

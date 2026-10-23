@@ -10,9 +10,12 @@ import {
   Calendar
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
+import { useAuth } from '../contexts/AuthContext';
+import { UserCheck } from 'lucide-react';
 
 export const RelatorioOficialPage: React.FC = () => {
-  const { indicadores, estabelecimentos, exportarPlanilha } = useVigiMinas();
+  const { indicadores, estabelecimentos, exportarPlanilha, configuracao } = useVigiMinas();
+  const { usuario } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -262,8 +265,19 @@ export const RelatorioOficialPage: React.FC = () => {
           2. Em cumprimento à determinação da Secretaria de Estado de Saúde (SES/MG), todos os cadastros baixados/inativos permanecem preservados no histórico da Vigilância Sanitária Municipal com as respectivas datas de baixa averbadas.
         </p>
         <p className="leading-relaxed font-semibold text-slate-800">
-          Equipe Fiscalizadora Responsável: Lucas Silveira, Matheus Oliveira e Edmila Ferreira.
+          Equipe Fiscalizadora Habilitada: {configuracao.fiscais.filter(f => f.ativo && !f.isDeleted).map(f => `${f.nome} (${f.cargo})`).join(', ') || 'Corpo Técnico Municipal'}.
         </p>
+        {usuario && (
+          <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-500 gap-1 font-mono">
+            <span className="flex items-center gap-1 font-bold text-slate-800">
+              <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+              Responsável pela Digitação e Emissão: {usuario.nomeCompleto} - {usuario.cargo} (@{usuario.username})
+            </span>
+            <span>
+              Emissão: {new Date().toLocaleString('pt-BR')} • VigiMinas
+            </span>
+          </div>
+        )}
       </div>
 
     </div>
