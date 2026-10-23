@@ -173,7 +173,7 @@ export interface Usuario {
   cargo: string; // Ex: Coordenador
   funcao: UserRole; // admin_master | fiscal_tecnico | digitador
   email: string; // Ex: matheus_macieira@hotmail.com
-  senha?: string; // Senha para autenticação
+  senhaHash?: string; // Hash SHA-256 defensivo para autenticação
   ativo: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -211,7 +211,7 @@ export const USUARIO_MASTER_SEED: Usuario = {
   cargo: 'Coordenador',
   funcao: 'admin_master',
   email: 'matheus_macieira@hotmail.com',
-  senha: '22061993',
+  senhaHash: '5b36b95e75a6e08ba271392585852160ed3f2ae23c52f06b07c9a80e5da90052',
   ativo: true,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z'

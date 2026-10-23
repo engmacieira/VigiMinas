@@ -21,7 +21,7 @@ export interface AuthContextType {
   logout: () => void;
   usuarios: Usuario[];
   carregarUsuarios: () => Promise<void>;
-  cadastrarUsuario: (dados: Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'ultimoAcesso'>) => Promise<void>;
+  cadastrarUsuario: (dados: Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'ultimoAcesso'> & { senha?: string }) => Promise<void>;
   editarUsuario: (id: string, dados: Partial<Omit<Usuario, 'id' | 'createdAt'>>) => Promise<void>;
   redefinirSenhaUsuario: (id: string, novaSenha: string) => Promise<void>;
   toggleAtivoUsuario: (id: string) => Promise<void>;
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Cadastrar Novo Usuário (Admin Master)
   const cadastrarUsuario = useCallback(async (
-    dados: Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'ultimoAcesso'>
+    dados: Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'ultimoAcesso'> & { senha?: string }
   ) => {
     const novo = await cadastrarNovoUsuario(dados, {
       usuarioId: usuario?.id,

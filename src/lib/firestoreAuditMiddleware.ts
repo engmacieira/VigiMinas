@@ -56,9 +56,13 @@ export interface AuditContextInfo {
 }
 
 /**
- * Obtém o identificador do usuário ou fiscal ativo no momento da operação
+ * Obtém o identificador autêntico do usuário ativo (Prevenção de Spoofing)
  */
 export function getActiveUserIdentifier(contextOverride?: AuditContextInfo, fallbackFiscal?: string): string {
+  const activeUser = getActiveAuditUser();
+  if (activeUser) {
+    return `${activeUser.nomeCompleto} (${activeUser.cargo})`;
+  }
   if (contextOverride?.usuario) {
     return contextOverride.usuario;
   }
@@ -66,10 +70,6 @@ export function getActiveUserIdentifier(contextOverride?: AuditContextInfo, fall
     return contextOverride.cargo 
       ? `${contextOverride.nomeUsuario} (${contextOverride.cargo})`
       : contextOverride.nomeUsuario;
-  }
-  const activeUser = getActiveAuditUser();
-  if (activeUser) {
-    return `${activeUser.nomeCompleto} (${activeUser.cargo})`;
   }
   if (auth.currentUser?.email) {
     return auth.currentUser.email;
@@ -90,9 +90,17 @@ export function getActiveUserIdentifier(contextOverride?: AuditContextInfo, fall
  * Registra o log na coleção 'logs_auditoria' do Firestore
  */
 async function persistAuditLog(log: LogAuditoria): Promise<void> {
+  // Limpa propriedades com valor undefined antes de gravar no Firestore
+  const cleanLog: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(log)) {
+    if (v !== undefined) {
+      cleanLog[k] = v;
+    }
+  }
+
   try {
     const logRef = doc(db, LOGS_AUDITORIA_COLLECTION, log.id);
-    await setDoc(logRef, log);
+    await setDoc(logRef, cleanLog);
   } catch (err) {
     console.warn('Middleware de auditoria: Falha ao persistir no Firestore, gravando no cache local.', err);
     try {
@@ -160,6 +168,7 @@ export async function createWithAudit<T extends DocumentData>(
       ? 'ConfiguracaoSistema'
       : 'InspecaoVapt';
 
+  // ANTI-SPOOFING: Injeta metadados de autoria estritamente a partir do usuário autenticado ativo na sessão
   const logPayload: LogAuditoria = {
     id: `audit-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
     recursoId: docId,
@@ -169,9 +178,9 @@ export async function createWithAudit<T extends DocumentData>(
     colecao,
     tipoRegistro,
     usuario,
-    usuarioId: auditContext?.usuarioId || activeUser?.id,
-    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
-    cargo: auditContext?.cargo || activeUser?.cargo,
+    usuarioId: activeUser?.id || auditContext?.usuarioId,
+    nomeUsuario: activeUser?.nomeCompleto || activeUser?.username || auditContext?.nomeUsuario,
+    cargo: activeUser?.cargo || auditContext?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: String(identificador),
     detalhes: auditContext?.detalhesPersonalizados || `Criação de registro em ${colecao} (ID: ${docId}).`,
@@ -245,11 +254,11 @@ export async function updateWithAudit<T extends DocumentData>(
       ? 'ConfiguracaoSistema'
       : 'InspecaoVapt';
 
-  // Monta resumo detalhado das alterações before/after
+  // Monta resumo detalhado das alterações before/after OMITINDO campos confidenciais de senha
   const diffs: string[] = [];
   if (recSnap) {
     for (const key of Object.keys(data)) {
-      if (key === 'updatedAt' || key === 'createdAt') continue;
+      if (key === 'updatedAt' || key === 'createdAt' || key === 'senha' || key === 'senhaHash') continue;
       const ant = recSnap[key];
       const nov = recData[key];
       if (JSON.stringify(ant) !== JSON.stringify(nov)) {
@@ -267,12 +276,13 @@ export async function updateWithAudit<T extends DocumentData>(
 
   let detalhes = auditContext?.detalhesPersonalizados;
   if (!detalhes) {
-    const chavesModificadas = Object.keys(data).filter(k => k !== 'updatedAt');
+    const chavesModificadas = Object.keys(data).filter(k => k !== 'updatedAt' && k !== 'senha' && k !== 'senhaHash');
     detalhes = diffs.length > 0
       ? `Atualização em ${colecao}: ${diffs.slice(0, 3).join('; ')}${diffs.length > 3 ? ` (+${diffs.length - 3} campos)` : ''}.`
       : `Atualização de ${chavesModificadas.length} campo(s) em ${colecao}.`;
   }
 
+  // ANTI-SPOOFING: Injeta metadados de autoria estritamente a partir do usuário autenticado ativo na sessão
   const logPayload: LogAuditoria = {
     id: `audit-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
     recursoId: docId,
@@ -282,9 +292,9 @@ export async function updateWithAudit<T extends DocumentData>(
     colecao,
     tipoRegistro,
     usuario,
-    usuarioId: auditContext?.usuarioId || activeUser?.id,
-    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
-    cargo: auditContext?.cargo || activeUser?.cargo,
+    usuarioId: activeUser?.id || auditContext?.usuarioId,
+    nomeUsuario: activeUser?.nomeCompleto || activeUser?.username || auditContext?.nomeUsuario,
+    cargo: activeUser?.cargo || auditContext?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: String(identificador),
     detalhes,
@@ -298,7 +308,6 @@ export async function updateWithAudit<T extends DocumentData>(
 
 /**
  * MIDDLEWARE DE PERSISTÊNCIA: Exclusão Lógica Auditada (Soft Delete)
- * Não remove fisicamente o documento; grava isDeleted: true, deletedAt, deletedBy e motivoExclusao.
  */
 export async function softDeleteWithAudit(
   colecao: ColecaoAuditada,
@@ -314,7 +323,6 @@ export async function softDeleteWithAudit(
   const fiscal = auditContext?.fiscalResponsavel || activeUser?.nomeCompleto || 'Fiscal VISA';
   const usuario = getActiveUserIdentifier(auditContext, fiscal);
 
-  // Executa exclusão lógica com merge para preservar campos intactos
   await setDoc(docRef, {
     isDeleted: true,
     deletedAt: timestamp,
@@ -338,9 +346,9 @@ export async function softDeleteWithAudit(
     colecao,
     tipoRegistro,
     usuario,
-    usuarioId: auditContext?.usuarioId || activeUser?.id,
-    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
-    cargo: auditContext?.cargo || activeUser?.cargo,
+    usuarioId: activeUser?.id || auditContext?.usuarioId,
+    nomeUsuario: activeUser?.nomeCompleto || activeUser?.username || auditContext?.nomeUsuario,
+    cargo: activeUser?.cargo || auditContext?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: identificadorEntidade || docId,
     detalhes: auditContext?.detalhesPersonalizados || 
@@ -368,7 +376,6 @@ export async function restoreWithAudit(
   const fiscal = auditContext?.fiscalResponsavel || activeUser?.nomeCompleto || 'Fiscal VISA';
   const usuario = getActiveUserIdentifier(auditContext, fiscal);
 
-  // Restaura o registro desmarcando isDeleted
   await setDoc(docRef, {
     isDeleted: false,
     deletedAt: null,
@@ -392,9 +399,9 @@ export async function restoreWithAudit(
     colecao,
     tipoRegistro,
     usuario,
-    usuarioId: auditContext?.usuarioId || activeUser?.id,
-    nomeUsuario: auditContext?.nomeUsuario || activeUser?.nomeCompleto || activeUser?.username,
-    cargo: auditContext?.cargo || activeUser?.cargo,
+    usuarioId: activeUser?.id || auditContext?.usuarioId,
+    nomeUsuario: activeUser?.nomeCompleto || activeUser?.username || auditContext?.nomeUsuario,
+    cargo: activeUser?.cargo || activeUser?.cargo || auditContext?.cargo,
     fiscalResponsavel: fiscal,
     identificadorEntidade: identificadorEntidade || docId,
     detalhes: auditContext?.detalhesPersonalizados || 
@@ -408,4 +415,3 @@ export async function restoreWithAudit(
 
 // Alias de retrocompatibilidade
 export const deleteWithAudit = softDeleteWithAudit;
-
