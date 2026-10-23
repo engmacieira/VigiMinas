@@ -22,9 +22,11 @@ describe('Fluxo 4 (Integração): Regras de Segurança Firestore (firestore.rule
       expect(rulesContent).toContain("allow read, write: if false;");
     });
 
-    it('define a função auxiliar de validação de ID (isValidId)', () => {
+    it('define as funções auxiliares de autenticação e validação de permissões', () => {
+      expect(rulesContent).toContain("function isAuthenticated()");
       expect(rulesContent).toContain("function isValidId(id)");
-      expect(rulesContent).toContain("id is string && id.size() > 0 && id.size() <= 128");
+      expect(rulesContent).toContain("function isAdminMaster()");
+      expect(rulesContent).toContain("function isOwner(usuarioId)");
     });
   });
 
@@ -49,14 +51,18 @@ describe('Fluxo 4 (Integração): Regras de Segurança Firestore (firestore.rule
   });
 
   describe('Coleção de Logs de Auditoria (/logs_auditoria/{logId})', () => {
-    it('garante a imutabilidade estrita dos logs de auditoria (allow update: if false)', () => {
+    it('garante a imutabilidade estrita e proibição de exclusão dos logs (append-only)', () => {
       expect(rulesContent).toContain("match /logs_auditoria/{logId}");
-      expect(rulesContent).toContain("allow read: if true;");
+      expect(rulesContent).toContain("allow read: if isAuthenticated();");
       expect(rulesContent).toContain("request.resource.data.recursoId is string");
       expect(rulesContent).toContain("request.resource.data.operacao is string");
       expect(rulesContent).toContain("request.resource.data.colecao is string");
       expect(rulesContent).toContain("allow update: if false;");
-      expect(rulesContent).toContain("allow delete: if isValidId(logId);");
+      expect(rulesContent).toContain("allow delete: if false;");
+    });
+
+    it('valida se usuarioId no documento coincide com o UID autenticado', () => {
+      expect(rulesContent).toContain("(!('usuarioId' in request.resource.data) || request.resource.data.usuarioId == request.auth.uid)");
     });
   });
 
@@ -67,6 +73,23 @@ describe('Fluxo 4 (Integração): Regras de Segurança Firestore (firestore.rule
       expect(rulesContent).toContain("request.resource.data.secretaria is map");
       expect(rulesContent).toContain("request.resource.data.exercicioAtivo is map");
       expect(rulesContent).toContain("allow delete: if false;");
+    });
+  });
+
+  describe('Coleção de Usuários (/usuarios/{usuarioId}) - Proteção e RBAC', () => {
+    it('restringe leitura a usuários autenticados (próprio usuário ou master)', () => {
+      expect(rulesContent).toContain("match /usuarios/{usuarioId}");
+      expect(rulesContent).toContain("allow read: if isAuthenticated() && (isOwner(usuarioId) || isAdminMaster());");
+    });
+
+    it('restringe criação e exclusão exclusivamente ao Administrador Master', () => {
+      expect(rulesContent).toContain("allow create: if isAuthenticated() && isAdminMaster()");
+      expect(rulesContent).toContain("allow delete: if isAuthenticated() && isAdminMaster() && isValidId(usuarioId);");
+    });
+
+    it('impede auto-atribuição de cargos ou privilégios master por usuários comuns em update', () => {
+      expect(rulesContent).toContain("request.resource.data.funcao == resource.data.funcao");
+      expect(rulesContent).toContain("request.resource.data.ativo == resource.data.ativo");
     });
   });
 });

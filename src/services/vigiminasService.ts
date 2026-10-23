@@ -39,6 +39,7 @@ import {
   SEED_CONFIGURACAO_SISTEMA,
   FISCAIS_MUNICIPIO
 } from '../data/braunasInitialData';
+import { validarPermissaoMaster } from './authService';
 
 const ESTABELECIMENTOS_COLLECTION = 'estabelecimentos';
 const INSPECOES_VAPT_COLLECTION = 'inspecoes_vapt';
@@ -98,8 +99,15 @@ export async function registrarLogAuditoria(
     timestamp: new Date().toISOString()
   };
 
+  const cleanLog: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(logCompleto)) {
+    if (v !== undefined) {
+      cleanLog[k] = v;
+    }
+  }
+
   try {
-    await setDoc(doc(db, LOGS_AUDITORIA_COLLECTION, logCompleto.id), logCompleto);
+    await setDoc(doc(db, LOGS_AUDITORIA_COLLECTION, logCompleto.id), cleanLog);
   } catch (error) {
     console.warn('Falha ao salvar log no Firestore:', error);
   }
@@ -165,6 +173,7 @@ export async function saveConfiguracaoSistema(
   config: ConfiguracaoSistema,
   auditContext?: { usuario?: string; fiscalResponsavel?: string; detalhesPersonalizados?: string }
 ): Promise<void> {
+  validarPermissaoMaster();
   const timestamp = new Date().toISOString();
   const configToSave: ConfiguracaoSistema = {
     ...config,
@@ -1618,6 +1627,7 @@ export async function limparBancoDeDados(opcoes?: OpcoesLimpezaBanco): Promise<{
   vaptRemovidos: number;
   logsRemovidos: number;
 }> {
+  validarPermissaoMaster();
   const opt: OpcoesLimpezaBanco = {
     limparEstabelecimentos: true,
     limparInspecoesVapt: true,
@@ -1714,6 +1724,7 @@ export async function limparBancoDeDados(opcoes?: OpcoesLimpezaBanco): Promise<{
 }
 
 export async function restaurarDadosDemonstrativos(): Promise<void> {
+  validarPermissaoMaster();
   await seedInitialEstabelecimentos();
   await seedInitialVapt();
   const config = await fetchConfiguracaoSistema();

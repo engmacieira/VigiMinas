@@ -7,12 +7,21 @@ import {
   redefinirSenhaUsuario, 
   atualizarMeuPerfil 
 } from '../../../src/services/authService';
-import { USUARIO_MASTER_SEED } from '../../../src/types/vigiminas';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../../../src/lib/firebase';
 
 describe('authService - Autenticação e Gestão de Usuários', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
     vi.clearAllMocks();
+    try {
+      const snap = await getDocs(collection(db, 'usuarios'));
+      for (const d of snap.docs) {
+        await deleteDoc(doc(db, 'usuarios', d.id));
+      }
+    } catch {
+      // ignora
+    }
   });
 
   it('semeia automaticamente o usuário master se a base estiver vazia', async () => {
@@ -33,7 +42,8 @@ describe('authService - Autenticação e Gestão de Usuários', () => {
     expect(usuarioLogado).toBeDefined();
     expect(usuarioLogado.username).toBe('Matheus');
     expect(usuarioLogado.funcao).toBe('admin_master');
-    expect(usuarioLogado.senha).toBeUndefined(); // Senha não deve ser exposta na sessão
+    expect((usuarioLogado as unknown as Record<string, unknown>).senha).toBeUndefined(); // Senha não deve ser exposta na sessão
+    expect(usuarioLogado.senhaHash).toBeUndefined(); // Hash não deve ser exposto na sessão
   });
 
   it('rejeita autenticação com senha incorreta', async () => {
@@ -57,7 +67,7 @@ describe('authService - Autenticação e Gestão de Usuários', () => {
       email: 'lucas@braunas.mg.gov.br',
       senha: 'minhaSenhaSegura',
       ativo: true
-    });
+    } as any);
 
     expect(novo.id).toBeDefined();
     expect(novo.username).toBe('lucas_fiscal');
@@ -76,7 +86,7 @@ describe('authService - Autenticação e Gestão de Usuários', () => {
       email: 'outro@braunas.mg.gov.br',
       senha: 'senha123456',
       ativo: true
-    })).rejects.toThrow('já está em uso');
+    } as any)).rejects.toThrow('já está em uso');
   });
 
   it('permite ao Administrador Master redefinir a senha de outro usuário', async () => {
@@ -88,7 +98,7 @@ describe('authService - Autenticação e Gestão de Usuários', () => {
       email: 'fiscal@braunas.mg.gov.br',
       senha: 'senhaAntiga123',
       ativo: true
-    });
+    } as any);
 
     await redefinirSenhaUsuario(novo.id, 'senhaNova456789');
 
