@@ -72,10 +72,11 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
     <div className="space-y-6">
       
       {/* Faixa de Status Executivo do Município */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 text-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+      <div className="bg-slate-900 border border-slate-800/90 rounded-2xl p-6 sm:p-7 text-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-lg relative overflow-hidden">
+        <div className="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="space-y-1.5 relative z-10">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2.2} />
               Monitoramento Oficial • Resolução SES/MG
             </span>
@@ -86,7 +87,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
             Consolidação em tempo real dos 5 indicadores sanitários municipais e de saúde do trabalhador.
-            <strong className="text-emerald-400 ml-1">
+            <strong className="text-emerald-400 ml-1 font-semibold">
               {totalMetasConformes === 5 
                 ? 'Conformidade plena: 5 de 5 metas atingidas.' 
                 : `${totalMetasConformes} de 5 metas em conformidade.`}
@@ -94,12 +95,12 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 relative z-10">
           <button
             type="button"
             onClick={onExportExcel}
             aria-label="Exportar Planilha Oficial em Excel"
-            className="min-h-[44px] px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition duration-150 ease-out flex items-center gap-2 cursor-pointer shadow-xs active:scale-97"
+            className="min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all duration-150 flex items-center gap-2 cursor-pointer shadow-md hover:shadow-emerald-900/20 active:scale-[0.98]"
           >
             <FileSpreadsheet className="w-4 h-4" strokeWidth={2} />
             <span>Exportar Planilha Oficial (.xlsx)</span>
@@ -108,28 +109,29 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
       </div>
 
       {/* Grid Operacional dos 5 Indicadores VigiMinas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         
         {/* INDICADOR 12 */}
-        <div className="bg-white rounded-xl border border-slate-200/90 p-5 flex flex-col justify-between hover:border-slate-300 transition duration-150">
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/70 p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
-                  12
-                </span>
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Cadastro Geral VISA
-                </span>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-blue-50 text-blue-600 p-2.5 rounded-xl">
+                  <Building2 className="w-4 h-4" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Indicador 12</span>
+                  <span className="text-xs font-bold text-slate-800">Cadastro Geral VISA</span>
+                </div>
               </div>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/80">
                 Conforme
               </span>
             </div>
 
             <div className="mt-4">
               <span className="text-xs text-slate-500 font-medium block">Total de Estabelecimentos</span>
-              <div className="flex items-baseline gap-2 mt-0.5">
+              <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                   {indicadores.ind12TotalCadastrados}
                 </span>
@@ -137,14 +139,14 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-50/80 border border-slate-100">
+            <div className="mt-4 grid grid-cols-2 gap-2.5 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100">
                 <span className="text-slate-500 block text-[11px]">Ativos Regulares</span>
                 <span className="text-sm font-bold text-emerald-800 mt-0.5 block">
                   {indicadores.ind12Ativos} unidades
                 </span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50/80 border border-slate-100">
+              <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100">
                 <span className="text-slate-500 block text-[11px]">Baixados / Histórico</span>
                 <span className="text-sm font-bold text-slate-700 mt-0.5 block">
                   {indicadores.ind12Inativos} unidades
@@ -157,7 +159,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="mt-5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onGoToEstabelecimentos}
@@ -171,24 +173,25 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
         </div>
 
         {/* INDICADOR 13: Risco I */}
-        <div className="bg-white rounded-xl border border-slate-200/90 p-5 flex flex-col justify-between hover:border-slate-300 transition duration-150">
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/70 p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold text-xs">
-                  13
-                </span>
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Risco I (Baixo Risco)
-                </span>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl">
+                  <ShieldCheck className="w-4 h-4" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Indicador 13</span>
+                  <span className="text-xs font-bold text-slate-800">Risco I (Baixo Risco)</span>
+                </div>
               </div>
               {indicadores.ind13MetaAtingida ? (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   Meta Atingida
                 </span>
               ) : (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 text-amber-600" />
                   Pendente
                 </span>
@@ -200,7 +203,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
                 <span className="text-xs text-slate-500 font-medium">Inspecionados em {anoStr}</span>
                 <span className="text-xs font-bold text-slate-700 font-mono">Meta SES: &ge; {metaInd13RiscoI}%</span>
               </div>
-              <div className="flex items-baseline gap-2 mt-0.5">
+              <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                   {indicadores.ind13Percentual.toFixed(1)}%
                 </span>
@@ -232,7 +235,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="mt-5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onGoToEstabelecimentos}
@@ -246,24 +249,25 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
         </div>
 
         {/* INDICADOR 14: Risco II */}
-        <div className="bg-white rounded-xl border border-slate-200/90 p-5 flex flex-col justify-between hover:border-slate-300 transition duration-150">
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/70 p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-md bg-amber-50 text-amber-800 flex items-center justify-center font-bold text-xs">
-                  14
-                </span>
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Risco II (Médio Risco)
-                </span>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-amber-50 text-amber-600 p-2.5 rounded-xl">
+                  <TrendingUp className="w-4 h-4" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Indicador 14</span>
+                  <span className="text-xs font-bold text-slate-800">Risco II (Médio Risco)</span>
+                </div>
               </div>
               {indicadores.ind14MetaAtingida ? (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   Meta Atingida
                 </span>
               ) : (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 text-amber-600" />
                   Pendente
                 </span>
@@ -275,7 +279,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
                 <span className="text-xs text-slate-500 font-medium">Inspecionados em {anoStr}</span>
                 <span className="text-xs font-bold text-slate-700 font-mono">Meta SES: &ge; {metaInd14RiscoII}%</span>
               </div>
-              <div className="flex items-baseline gap-2 mt-0.5">
+              <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                   {indicadores.ind14Percentual.toFixed(1)}%
                 </span>
@@ -307,7 +311,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="mt-5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onGoToEstabelecimentos}
@@ -321,24 +325,25 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
         </div>
 
         {/* INDICADOR 15: Risco III */}
-        <div className="bg-white rounded-xl border border-slate-200/90 p-5 flex flex-col justify-between hover:border-slate-300 transition duration-150">
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/70 p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-md bg-rose-50 text-rose-800 flex items-center justify-center font-bold text-xs">
-                  15
-                </span>
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Risco III (Alto Risco)
-                </span>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-rose-50 text-rose-600 p-2.5 rounded-xl">
+                  <AlertTriangle className="w-4 h-4" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Indicador 15</span>
+                  <span className="text-xs font-bold text-slate-800">Risco III (Alto Risco)</span>
+                </div>
               </div>
               {indicadores.ind15MetaAtingida ? (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   {metaInd15RiscoIII}% Atingido
                 </span>
               ) : (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200/80 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 text-rose-600" />
                   {indicadores.ind15TotalRiscoIII - indicadores.ind15InspecionadosAno} Pendente(s)
                 </span>
@@ -350,7 +355,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
                 <span className="text-xs text-slate-500 font-medium">Inspecionados em {anoStr}</span>
                 <span className="text-xs font-bold text-rose-700 font-mono">Meta SES: {metaInd15RiscoIII}%</span>
               </div>
-              <div className="flex items-baseline gap-2 mt-0.5">
+              <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                   {indicadores.ind15Percentual.toFixed(1)}%
                 </span>
@@ -381,7 +386,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="mt-5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onGoToEstabelecimentos}
@@ -395,24 +400,25 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
         </div>
 
         {/* INDICADOR 11: VAPT / Saúde do Trabalhador */}
-        <div className="bg-white rounded-xl border border-slate-200/90 p-5 flex flex-col justify-between hover:border-slate-300 transition duration-150 md:col-span-2 lg:col-span-2">
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/70 p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all md:col-span-2 lg:col-span-2">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-md bg-teal-50 text-teal-800 flex items-center justify-center font-bold text-xs">
-                  11
-                </span>
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Saúde do Trabalhador • VAPT
-                </span>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-teal-50 text-teal-600 p-2.5 rounded-xl">
+                  <HardHat className="w-4 h-4" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Indicador 11</span>
+                  <span className="text-xs font-bold text-slate-800">Saúde do Trabalhador • VAPT</span>
+                </div>
               </div>
               {indicadores.ind11MetaAtingida ? (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   Meta Cumprida (&ge; {metaInd11Vapt} vistorias)
                 </span>
               ) : (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 text-amber-600" />
                   Falta {Math.max(0, metaInd11Vapt - indicadores.ind11TotalInspecoesAno)} vistoria(s)
                 </span>
@@ -422,14 +428,14 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             <div className="mt-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Vistorias em Ambientes e Processos de Trabalho</span>
-                <div className="flex items-baseline gap-2 mt-0.5">
+                <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                     {indicadores.ind11TotalInspecoesAno}
                   </span>
                   <span className="text-xs text-slate-500 font-medium">inspeções formais registradas em {anoStr}</span>
                 </div>
               </div>
-              <span className="text-xs font-mono font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded border border-teal-200 self-start sm:self-auto">
+              <span className="text-xs font-mono font-bold text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-200/80 self-start sm:self-auto">
                 Meta Mínima: &ge; {metaInd11Vapt} vistorias
               </span>
             </div>
@@ -439,7 +445,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
             <span className="text-xs text-slate-400">
               Equipe ativa: {nomesFiscaisAtivos}
             </span>
@@ -461,7 +467,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
       {(pendentesRiscoIII.length > 0 || pendentesRiscoII.length > 0) && (
         <div className="bg-white rounded-xl border border-slate-200/90 overflow-hidden">
           
-          <div className="px-5 py-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/50">
+          <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/50">
             <div className="flex items-center gap-2">
               <CalendarCheck className="w-4 h-4 text-emerald-700" strokeWidth={2.2} />
               <h3 className="text-sm font-bold text-slate-900">
@@ -478,7 +484,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             {pendentesRiscoIII.map((est) => (
               <div 
                 key={est.id} 
-                className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 transition"
+                className="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors"
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -510,7 +516,7 @@ export const DashboardMetas: React.FC<DashboardMetasProps> = React.memo(({
             {pendentesRiscoII.slice(0, 4).map((est) => (
               <div 
                 key={est.id} 
-                className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 transition"
+                className="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors"
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2 flex-wrap">

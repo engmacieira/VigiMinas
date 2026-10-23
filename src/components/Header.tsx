@@ -114,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar }) => {
 
   return (
     <>
-      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 shadow-2xs">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/70 sticky top-0 z-30 shadow-sm transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between gap-4">
             
@@ -165,14 +165,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar }) => {
               <button
                 type="button"
                 onClick={() => setCommandPaletteOpen(true)}
-                className="w-full h-10 px-3.5 rounded-xl bg-slate-100/80 hover:bg-slate-100 border border-slate-200/90 text-left text-xs text-slate-500 hover:text-slate-700 flex items-center justify-between gap-2 shadow-2xs transition duration-150 ease-out cursor-pointer active:scale-[0.99] focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full h-10 px-3.5 rounded-xl bg-slate-100/70 hover:bg-slate-100 border border-slate-200/80 text-left text-xs text-slate-500 hover:text-slate-700 flex items-center justify-between gap-2 shadow-2xs transition-all duration-150 ease-out cursor-pointer active:scale-[0.99] focus:outline-hidden focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500"
               >
                 <div className="flex items-center gap-2.5 truncate">
                   <Search className="w-4 h-4 text-slate-400 shrink-0" strokeWidth={2} />
                   <span className="truncate">Buscar estabelecimentos, CNPJ, vistorias...</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <kbd className="text-[10px] font-mono font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-2xs">
+                  <kbd className="text-[10px] font-mono font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
                     ⌘K
                   </kbd>
                 </div>
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar }) => {
 
                 {/* Popover de Notificações */}
                 {notificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 p-3 space-y-2 text-xs">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/80 z-50 p-3 space-y-2 text-xs animate-in fade-in zoom-in-95 duration-150">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
                       <div className="flex items-center gap-2">
                         <History className="w-4 h-4 text-emerald-600" />
@@ -292,7 +292,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar }) => {
                 </button>
 
                 {menuExportarAberto && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 p-2 space-y-1 text-xs">
+                  <div className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/80 z-50 p-2 space-y-1 text-xs animate-in fade-in zoom-in-95 duration-150">
                     <button
                       type="button"
                       onClick={() => {
