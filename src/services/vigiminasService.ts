@@ -900,7 +900,7 @@ export function aplicarMascaraTelefone(valor: string): string {
 /**
  * Função auxiliar para interpretar datas de planilhas (seriais do Excel, DD/MM/AAAA ou AAAA-MM-DD)
  */
-function normalizarDataExcel(val: any): string {
+function normalizarDataExcel(val: unknown): string {
   if (val === null || val === undefined || val === '') return '';
   if (typeof val === 'number') {
     // Serial do Excel (base 1899-12-30)
@@ -1131,7 +1131,7 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
   }
 
   // Converte linhas em objetos brutos
-  const rawRows: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+  const rawRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
   
   const validos: Estabelecimento[] = [];
   const erros: ResultadoParsePlanilha['erros'] = [];
@@ -1140,7 +1140,7 @@ export function parsearPlanilhaEstabelecimentos(buffer: ArrayBuffer | Uint8Array
     const linhaNumero = index + 2; // Linha 1 é o cabeçalho no Excel
 
     // Normaliza as chaves do objeto para minúsculas sem pontuação
-    const normalizedRow: Record<string, any> = {};
+    const normalizedRow: Record<string, unknown> = {};
     Object.keys(row).forEach(key => {
       const cleanKey = key
         .toLowerCase()
@@ -1474,7 +1474,7 @@ export async function exportarEstabelecimentosFormatados(
       : ['Nº', 'ID Sistema', 'CNPJ / CPF', 'Razão Social', 'Nome Fantasia', 'Identificação Municipal', 'CNAE Principal', 'Descrição da Atividade', 'CNAEs Secundários', 'Risco Sanitário', 'Competência', 'Parecer Arquitetônico', 'Situação Cadastral', 'Motivo Baixa', 'Logradouro', 'Número', 'Bairro', 'CEP', 'Município', 'UF', 'Telefone', 'E-mail', 'Situação do Alvará', 'Número do Alvará', 'Validade do Alvará', 'Data Início Última Inspeção', 'Data Fim Última Inspeção', 'Inspecionado no Ano Vigente', 'Próxima Inspeção Prevista', 'Fiscais Responsáveis', 'Data de Cadastro'];
     
     // Função para escapar valores CSV de acordo com RFC 4180
-    const escaparCsv = (valor: any): string => {
+    const escaparCsv = (valor: unknown): string => {
       if (valor === null || valor === undefined) return '';
       const str = String(valor);
       if (str.includes(delimitadorCsv) || str.includes('"') || str.includes('\n') || str.includes('\r')) {
@@ -1488,7 +1488,7 @@ export async function exportarEstabelecimentosFormatados(
     csvContent += cabecalhos.map(escaparCsv).join(delimitadorCsv) + '\r\n';
 
     for (const linha of dadosFormatados) {
-      const valores = cabecalhos.map(c => escaparCsv((linha as any)[c]));
+      const valores = cabecalhos.map(c => escaparCsv((linha as Record<string, unknown>)[c]));
       csvContent += valores.join(delimitadorCsv) + '\r\n';
     }
 

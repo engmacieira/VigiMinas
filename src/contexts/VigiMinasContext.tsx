@@ -27,6 +27,7 @@ import {
 } from '../services/vigiminasService';
 import { testConnection } from '../lib/firebase';
 import { getActiveAuditUser } from '../lib/firestoreAuditMiddleware';
+import { AuthContext } from './AuthContext';
 import { 
   Estabelecimento, 
   InspecaoVapt, 
@@ -100,12 +101,27 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [configuracao, setConfiguracao] = useState<ConfiguracaoSistema>(SEED_CONFIGURACAO_SISTEMA);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const auth = useContext(AuthContext);
+  const usuarioLogado = auth?.usuario;
 
   const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToastMessage(msg);
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToastMessage((prev) => (prev === msg ? null : prev));
     }, 4000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
   }, []);
 
   const recarregarDados = useCallback(async () => {
@@ -288,7 +304,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const importarLotePlanilha = useCallback(async (lista: Estabelecimento[]) => {
     setLoading(true);
     try {
-      const activeUser = getActiveAuditUser();
+      const activeUser = usuarioLogado || getActiveAuditUser();
       const userIdent = activeUser?.email || activeUser?.username || 'usuario_sistema';
       const res = await importarEstabelecimentosEmLote(lista, userIdent);
       await recarregarDados();
@@ -301,7 +317,7 @@ export const VigiMinasProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } finally {
       setLoading(false);
     }
-  }, [recarregarDados, showToast]);
+  }, [usuarioLogado, recarregarDados, showToast]);
 
   // Eventos de Configuração Geral do Sistema
   const salvarConfiguracaoGeral = useCallback(async (novaConfig: ConfiguracaoSistema) => {

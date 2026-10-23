@@ -18,6 +18,17 @@ import {
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 
+interface CommandPaletteItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  category: string;
+  badge?: string;
+  path?: string;
+  action?: () => void;
+}
+
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
@@ -252,7 +263,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, selectedIndex, allResults]);
 
-  const handleSelect = (item: any) => {
+  const handleSelect = (item: CommandPaletteItem) => {
     onClose();
     if (item.action) {
       item.action();
@@ -309,7 +320,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
             </div>
           ) : (
             <div className="space-y-1">
-              {allResults.map((item: any, idx: number) => {
+              {allResults.map((item: CommandPaletteItem, idx: number) => {
                 const Icon = item.icon;
                 const isSelected = idx === selectedIndex;
 

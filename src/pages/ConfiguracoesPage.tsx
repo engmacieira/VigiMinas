@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { useAuth } from '../contexts/AuthContext';
-import { FiscalSanitario, DadosSecretaria, ConfiguracaoExercicio, Usuario, FuncaoUsuario } from '../types/vigiminas';
+import { FiscalSanitario, DadosSecretaria, ConfiguracaoExercicio, Usuario, FuncaoUsuario, StatusExercicio } from '../types/vigiminas';
 import { ConfirmarExclusaoModal } from '../components/ConfirmarExclusaoModal';
 
 type TabType = 'fiscais' | 'exercicio' | 'secretaria' | 'banco' | 'usuarios' | 'perfil';
@@ -187,8 +187,9 @@ export const ConfiguracoesPage: React.FC = () => {
     try {
       await cadastrarUsuario(novoUsuarioForm);
       setModalNovoUsuarioAberto(false);
-    } catch (err: any) {
-      setErroUsuarioModal(err.message || 'Erro ao cadastrar novo usuário.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao cadastrar novo usuário.';
+      setErroUsuarioModal(msg);
     } finally {
       setSalvandoUsuario(false);
     }
@@ -226,8 +227,9 @@ export const ConfiguracoesPage: React.FC = () => {
       await editarUsuario(usuarioEmEdicao.id, editarUsuarioForm);
       setModalEditarUsuarioAberto(false);
       setUsuarioEmEdicao(null);
-    } catch (err: any) {
-      setErroUsuarioModal(err.message || 'Erro ao atualizar dados do usuário.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao atualizar dados do usuário.';
+      setErroUsuarioModal(msg);
     } finally {
       setSalvandoUsuario(false);
     }
@@ -256,8 +258,9 @@ export const ConfiguracoesPage: React.FC = () => {
       await redefinirSenhaUsuario(usuarioParaRedefinirSenha.id, novaSenhaInput);
       setModalRedefinirSenhaAberto(false);
       setUsuarioParaRedefinirSenha(null);
-    } catch (err: any) {
-      setErroUsuarioModal(err.message || 'Erro ao redefinir senha do usuário.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao redefinir senha do usuário.';
+      setErroUsuarioModal(msg);
     } finally {
       setSalvandoUsuario(false);
     }
@@ -270,8 +273,9 @@ export const ConfiguracoesPage: React.FC = () => {
     }
     try {
       await toggleAtivoUsuario(u.id);
-    } catch (err: any) {
-      alert(err.message || 'Erro ao alterar status do usuário.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao alterar status do usuário.';
+      alert(msg);
     }
   };
 
@@ -316,8 +320,9 @@ export const ConfiguracoesPage: React.FC = () => {
       setNovaSenhaPerfil('');
       setConfirmarNovaSenha('');
       setFeedbackPerfil({ tipo: 'sucesso', texto: 'Seu perfil foi atualizado com sucesso!' });
-    } catch (err: any) {
-      setFeedbackPerfil({ tipo: 'erro', texto: err.message || 'Erro ao atualizar dados do perfil.' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao atualizar dados do perfil.';
+      setFeedbackPerfil({ tipo: 'erro', texto: msg });
     } finally {
       setSalvandoPerfil(false);
     }
@@ -957,7 +962,7 @@ export const ConfiguracoesPage: React.FC = () => {
               </label>
               <select
                 value={dadosExercicio.statusExercicio}
-                onChange={(e) => setDadosExercicio({ ...dadosExercicio, statusExercicio: e.target.value as any })}
+                onChange={(e) => setDadosExercicio({ ...dadosExercicio, statusExercicio: e.target.value as StatusExercicio })}
                 className="w-full sm:w-64 h-11 px-3 text-xs rounded-lg border border-slate-300 bg-white font-medium text-slate-800 outline-none cursor-pointer"
               >
                 <option value="Em Andamento">Em Andamento (Aberto para apuração)</option>
