@@ -258,9 +258,9 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = React.m
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
       <div
-        className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200/90 my-0 sm:my-8 flex flex-col max-h-[92vh]"
+        className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200/80 my-0 sm:my-8 flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-estabelecimento-titulo"
@@ -312,9 +312,9 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = React.m
                   placeholder="00.000.000/0000-00"
                   value={formData.cnpjCpf}
                   onChange={(e) => setFormData(prev => ({ ...prev, cnpjCpf: aplicarMascaraCnpjCpf(e.target.value) }))}
-                  className={`w-full min-h-[44px] text-xs px-3 rounded-lg border ${
-                    errors.cnpjCpf ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300 focus:border-emerald-600'
-                  } outline-none font-mono text-slate-800`}
+                  className={`w-full min-h-[44px] text-xs px-3 rounded-xl border ${
+                    errors.cnpjCpf ? 'border-rose-500 bg-rose-50/50' : 'border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+                  } transition-all outline-none font-mono text-slate-800`}
                 />
                 {errors.cnpjCpf && <p className="text-[11px] text-rose-600 mt-1">{errors.cnpjCpf}</p>}
               </div>
@@ -329,9 +329,9 @@ export const EstabelecimentoModal: React.FC<EstabelecimentoModalProps> = React.m
                   placeholder="Nome empresarial formal"
                   value={formData.razaoSocial}
                   onChange={(e) => setFormData(prev => ({ ...prev, razaoSocial: e.target.value }))}
-                  className={`w-full min-h-[44px] text-xs px-3 rounded-lg border ${
-                    errors.razaoSocial ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300 focus:border-emerald-600'
-                  } outline-none text-slate-800 font-semibold`}
+                  className={`w-full min-h-[44px] text-xs px-3 rounded-xl border ${
+                    errors.razaoSocial ? 'border-rose-500 bg-rose-50/50' : 'border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+                  } transition-all outline-none text-slate-800 font-semibold`}
                 />
                 {errors.razaoSocial && <p className="text-[11px] text-rose-600 mt-1">{errors.razaoSocial}</p>}
               </div>

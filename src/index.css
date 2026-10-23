@@ -6,7 +6,7 @@
   }
 
   body {
-    @apply antialiased text-slate-900 bg-slate-100/60 selection:bg-emerald-200 selection:text-emerald-950;
+    @apply antialiased text-slate-900 bg-slate-50 selection:bg-emerald-500/20 selection:text-emerald-950;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 

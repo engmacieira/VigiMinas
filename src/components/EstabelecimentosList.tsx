@@ -52,11 +52,11 @@ interface EstabelecimentosListProps {
 const RiscoBadge = React.memo<{ risco: NivelRisco }>(({ risco }) => {
   switch (risco) {
     case 'Risco I':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">Risco I</span>;
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">Risco I</span>;
     case 'Risco II':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">Risco II</span>;
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200/80">Risco II</span>;
     case 'Risco III':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-950 border border-rose-300">Risco III</span>;
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200/80">Risco III</span>;
   }
 });
 RiscoBadge.displayName = 'RiscoBadge';
@@ -65,29 +65,29 @@ const AlvaraBadge = React.memo<{ alvara: SituacaoAlvara }>(({ alvara }) => {
   switch (alvara) {
     case 'Válido':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-200">
-          <CheckCircle2 className="w-3 h-3 text-emerald-700" strokeWidth={2.5} />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+          <CheckCircle2 className="w-3 h-3 text-emerald-600" strokeWidth={2.5} />
           Válido
         </span>
       );
     case 'Vencido':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-900 border border-rose-200">
-          <XCircle className="w-3 h-3 text-rose-700" strokeWidth={2.5} />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200/80">
+          <XCircle className="w-3 h-3 text-rose-600" strokeWidth={2.5} />
           Vencido
         </span>
       );
     case 'Isento/Dispensado':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-100 text-sky-900 border border-sky-200">
-          <CheckCircle2 className="w-3 h-3 text-sky-700" strokeWidth={2.5} />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-800 border border-sky-200/80">
+          <CheckCircle2 className="w-3 h-3 text-sky-600" strokeWidth={2.5} />
           Dispensado
         </span>
       );
     case 'Não Possui (Irregular)':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-950 border border-amber-400">
-          <AlertTriangle className="w-3 h-3 text-amber-700" strokeWidth={2.5} />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-900 border border-amber-300">
+          <AlertTriangle className="w-3 h-3 text-amber-600" strokeWidth={2.5} />
           Não Possui (Irregular)
         </span>
       );
@@ -120,9 +120,9 @@ const EstabelecimentoArchivedTableRow: React.FC<EstabelecimentoArchivedTableRowP
   }, [onExcluirPermanente, est.id, est.razaoSocial, est.cnpjCpf]);
 
   return (
-    <tr className="hover:bg-amber-50/40 bg-amber-50/20 text-slate-700 transition duration-100">
+    <tr className="hover:bg-amber-50/40 bg-amber-50/20 text-slate-700 transition-colors">
       {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
-      <td className="py-3 px-4">
+      <td className="py-3.5 px-4">
         <span className="font-bold text-slate-900 text-xs block">
           {est.nomeFantasia || est.razaoSocial}
         </span>
@@ -260,11 +260,11 @@ const EstabelecimentoTableRow: React.FC<EstabelecimentoTableRowProps> = React.me
   }, [onExcluirEstabelecimento, est.id, est.razaoSocial]);
 
   return (
-    <tr className={`hover:bg-slate-50/70 transition duration-100 ${
+    <tr className={`hover:bg-slate-50/60 transition-colors ${
       est.situacaoEstabelecimento === 'Inativo' ? 'bg-slate-50/40 text-slate-500' : ''
     }`}>
       {/* Identificação com Nome Fantasia em destaque e Razão Social abaixo */}
-      <td className="py-3 px-4">
+      <td className="py-3.5 px-4">
         <span className="font-bold text-slate-900 text-xs block">
           {est.nomeFantasia || est.razaoSocial}
         </span>
@@ -754,25 +754,25 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
       </div>
 
       {/* Visualização Desktop: Tabela de Alta Densidade */}
-      <div className="hidden md:block bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs">
+      <div className="hidden md:block bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/70 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                <th className="py-3 px-4">Nome Fantasia / Razão Social</th>
-                <th className="py-3 px-4">Atividade (CNAE)</th>
-                <th className="py-3 px-4">Risco</th>
+              <tr className="bg-slate-50/80 border-b border-slate-200/70 text-slate-500 font-semibold uppercase tracking-wider text-xs">
+                <th className="py-3.5 px-4">Nome Fantasia / Razão Social</th>
+                <th className="py-3.5 px-4">Atividade (CNAE)</th>
+                <th className="py-3.5 px-4">Risco</th>
                 {abaExibicao === 'ativos' ? (
                   <>
-                    <th className="py-3 px-4">Inspeção Sanitária</th>
-                    <th className="py-3 px-4">Status / Alvará</th>
-                    <th className="py-3 px-4 text-right">Ações</th>
+                    <th className="py-3.5 px-4">Inspeção Sanitária</th>
+                    <th className="py-3.5 px-4">Status / Alvará</th>
+                    <th className="py-3.5 px-4 text-right">Ações</th>
                   </>
                 ) : (
                   <>
-                    <th className="py-3 px-4">Motivo do Arquivamento / Baixa</th>
-                    <th className="py-3 px-4">Data & Responsável</th>
-                    <th className="py-3 px-4 text-right">Ações</th>
+                    <th className="py-3.5 px-4">Motivo do Arquivamento / Baixa</th>
+                    <th className="py-3.5 px-4">Data & Responsável</th>
+                    <th className="py-3.5 px-4 text-right">Ações</th>
                   </>
                 )}
               </tr>
@@ -780,13 +780,20 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filtrados.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
-                    <p className="font-semibold text-slate-700">
-                      {abaExibicao === 'ativos' ? 'Nenhum estabelecimento ativo encontrado' : 'Nenhum estabelecimento arquivado'}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      {abaExibicao === 'ativos' ? 'Ajuste os filtros ou adicione um novo cadastro.' : 'Empresas encerradas ou arquivadas aparecerão aqui.'}
-                    </p>
+                  <td colSpan={6} className="py-16 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+                        <Building2 className="w-6 h-6" strokeWidth={1.5} />
+                      </div>
+                      <div className="max-w-xs text-center">
+                        <p className="text-sm font-semibold text-slate-800">
+                          {abaExibicao === 'ativos' ? 'Nenhum estabelecimento ativo encontrado' : 'Nenhum estabelecimento arquivado'}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {abaExibicao === 'ativos' ? 'Ajuste os termos de busca ou filtros selecionados acima.' : 'Empresas encerradas ou arquivadas aparecerão nesta aba.'}
+                        </p>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (

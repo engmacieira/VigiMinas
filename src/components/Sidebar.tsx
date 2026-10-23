@@ -210,9 +210,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 end
                 onClick={handleNavClick}
                 className={({ isActive }) =>
-                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] ${
+                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
                     isActive
-                      ? 'bg-emerald-500/15 text-emerald-300 font-bold border-l-3 border-emerald-400 pl-[10px]'
+                      ? 'bg-emerald-500/15 text-emerald-300 font-bold shadow-xs border border-emerald-500/30'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`
                 }
@@ -231,9 +231,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 to="/estabelecimentos"
                 onClick={handleNavClick}
                 className={({ isActive }) =>
-                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] ${
+                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
                     isActive
-                      ? 'bg-emerald-500/15 text-emerald-300 font-bold border-l-3 border-emerald-400 pl-[10px]'
+                      ? 'bg-emerald-500/15 text-emerald-300 font-bold shadow-xs border border-emerald-500/30'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`
                 }
@@ -252,9 +252,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 to="/saude-trabalhador"
                 onClick={handleNavClick}
                 className={({ isActive }) =>
-                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] ${
+                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
                     isActive
-                      ? 'bg-teal-500/15 text-teal-300 font-bold border-l-3 border-teal-400 pl-[10px]'
+                      ? 'bg-teal-500/15 text-teal-300 font-bold shadow-xs border border-teal-500/30'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`
                 }
@@ -298,9 +298,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 to="/relatorio-oficial"
                 onClick={handleNavClick}
                 className={({ isActive }) =>
-                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] ${
+                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
                     isActive
-                      ? 'bg-sky-500/15 text-sky-300 font-bold border-l-3 border-sky-400 pl-[10px]'
+                      ? 'bg-sky-500/15 text-sky-300 font-bold shadow-xs border border-sky-500/30'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`
                 }
@@ -319,9 +319,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 to="/logs-auditoria"
                 onClick={handleNavClick}
                 className={({ isActive }) =>
-                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] ${
+                  `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
                     isActive
-                      ? 'bg-emerald-500/15 text-emerald-300 font-bold border-l-3 border-emerald-400 pl-[10px]'
+                      ? 'bg-emerald-500/15 text-emerald-300 font-bold shadow-xs border border-emerald-500/30'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`
                 }
@@ -352,9 +352,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
             to="/configuracoes"
             onClick={handleNavClick}
             className={({ isActive }) =>
-              `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] ${
+              `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
                 isActive
-                  ? 'bg-emerald-500/15 text-emerald-300 font-bold border-l-3 border-emerald-400 pl-[10px]'
+                  ? 'bg-emerald-500/15 text-emerald-300 font-bold shadow-xs border border-emerald-500/30'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`
             }
