@@ -21,6 +21,7 @@ import { formatarDataBr } from '../services/vigiminasService';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { safePrint } from '../utils/printHelper';
 
 interface SaudeTrabalhadorVaptProps {
   inspecoesVapt: InspecaoVapt[];
@@ -642,7 +643,7 @@ export const SaudeTrabalhadorVapt: React.FC<SaudeTrabalhadorVaptProps> = ({
               </span>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => safePrint()}
                   className="min-h-[38px] px-3.5 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition cursor-pointer flex items-center gap-1.5 active:scale-97"
                 >
                   <Printer className="w-4 h-4" />

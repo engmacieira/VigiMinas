@@ -24,6 +24,7 @@ import {
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { Estabelecimento } from '../types/vigiminas';
 import { RegistrarInspecaoModal } from '../components/RegistrarInspecaoModal';
+import { safePrint } from '../utils/printHelper';
 
 export const RelatorioIndicador15Page: React.FC = () => {
   const navigate = useNavigate();
@@ -205,7 +206,7 @@ export const RelatorioIndicador15Page: React.FC = () => {
   };
 
   const handleImprimir = () => {
-    window.print();
+    safePrint();
   };
 
   // Helper para badge de alvará

@@ -24,7 +24,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  BellRing
 } from 'lucide-react';
 import { 
   Estabelecimento, 
@@ -47,6 +48,7 @@ interface EstabelecimentosListProps {
   onBaixarModelo?: () => void;
   onAbrirExportacao?: (filtrados: Estabelecimento[]) => void;
   onVerCalendario?: () => void;
+  onAbrirAvisoVistoria?: (est: Estabelecimento) => void;
 }
 
 const RiscoBadge = React.memo<{ risco: NivelRisco }>(({ risco }) => {
@@ -229,6 +231,7 @@ interface EstabelecimentoTableRowProps {
   onExcluirEstabelecimento: (id: string, razao: string) => void;
   onRegistrarInspecaoRapida: (est: Estabelecimento) => void;
   onCriarVaptVinculada: (est: Estabelecimento) => void;
+  onAbrirAvisoVistoria?: (est: Estabelecimento) => void;
 }
 
 const EstabelecimentoTableRow: React.FC<EstabelecimentoTableRowProps> = React.memo(({
@@ -236,7 +239,8 @@ const EstabelecimentoTableRow: React.FC<EstabelecimentoTableRowProps> = React.me
   onEditarEstabelecimento,
   onExcluirEstabelecimento,
   onRegistrarInspecaoRapida,
-  onCriarVaptVinculada
+  onCriarVaptVinculada,
+  onAbrirAvisoVistoria
 }) => {
   const isInspecionado2026 = useMemo(() => {
     return (est.dataUltimaInspecaoInicio && est.dataUltimaInspecaoInicio.startsWith('2026')) ||
@@ -392,6 +396,18 @@ const EstabelecimentoTableRow: React.FC<EstabelecimentoTableRowProps> = React.me
             <HardHat className="w-4 h-4" strokeWidth={2} />
           </button>
 
+          {onAbrirAvisoVistoria && (
+            <button
+              type="button"
+              onClick={() => onAbrirAvisoVistoria(est)}
+              title="Emitir Aviso de Vistoria Anual"
+              aria-label="Emitir Aviso de Vistoria Anual"
+              className="min-w-[44px] min-h-[44px] rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition flex items-center justify-center cursor-pointer border border-blue-200/80 active:scale-95"
+            >
+              <BellRing className="w-4 h-4" strokeWidth={2} />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleEditar}
@@ -432,7 +448,8 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
   onImportarPlanilha,
   onBaixarModelo,
   onAbrirExportacao,
-  onVerCalendario
+  onVerCalendario,
+  onAbrirAvisoVistoria
 }) => {
   const [abaExibicao, setAbaExibicao] = useState<'ativos' | 'arquivados'>('ativos');
   const [busca, setBusca] = useState('');
@@ -588,6 +605,18 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
             <Download className="w-4 h-4 text-emerald-700" strokeWidth={2.2} />
             <span>Exportar (CSV / XLS)</span>
           </button>
+
+          {onAbrirAvisoVistoria && (
+            <button
+              type="button"
+              onClick={() => onAbrirAvisoVistoria(filtrados[0] || estabelecimentos[0] || null)}
+              className="min-h-[44px] px-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-blue-300 shadow-2xs active:scale-[0.98]"
+              title="Emitir Comunicado Oficial de Vistoria Sanitária Anual Programada"
+            >
+              <BellRing className="w-4 h-4 text-blue-700" strokeWidth={2.2} />
+              <span>Emitir Aviso de Vistoria</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -817,6 +846,7 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
                       onExcluirEstabelecimento={onExcluirEstabelecimento}
                       onRegistrarInspecaoRapida={onRegistrarInspecaoRapida}
                       onCriarVaptVinculada={onCriarVaptVinculada}
+                      onAbrirAvisoVistoria={onAbrirAvisoVistoria}
                     />
                   );
                 })
@@ -997,6 +1027,17 @@ export const EstabelecimentosList: React.FC<EstabelecimentosListProps> = ({
 
                 {/* Grid de Botões de Ação para Celular com altura 44px */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                  {onAbrirAvisoVistoria && (
+                    <button
+                      type="button"
+                      onClick={() => onAbrirAvisoVistoria(est)}
+                      className="col-span-2 min-h-[44px] px-3 rounded-lg bg-blue-50 text-blue-800 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-97 border border-blue-200"
+                    >
+                      <BellRing className="w-4 h-4 text-blue-600" />
+                      <span>Emitir Comunicado de Vistoria Anual</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => onRegistrarInspecaoRapida(est)}

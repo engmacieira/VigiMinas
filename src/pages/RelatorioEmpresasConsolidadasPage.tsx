@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { Estabelecimento, NivelRisco } from '../types/vigiminas';
+import { safePrint } from '../utils/printHelper';
 
 export const RelatorioEmpresasConsolidadasPage: React.FC = () => {
   const { 
@@ -180,7 +181,7 @@ export const RelatorioEmpresasConsolidadasPage: React.FC = () => {
   }, [baseGeral, searchTerm, filtroRisco, filtroAlvara, filtroStatus, hojeISO]);
 
   const handleImprimir = () => {
-    window.print();
+    safePrint();
   };
 
   const limparFiltros = () => {

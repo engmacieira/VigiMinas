@@ -30,6 +30,7 @@ import {
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { Estabelecimento, NivelRisco } from '../types/vigiminas';
 import { ExportarEstabelecimentosModal } from '../components/ExportarEstabelecimentosModal';
+import { safePrint } from '../utils/printHelper';
 
 export const RelatorioIndicador12Page: React.FC = () => {
   const { 
@@ -104,7 +105,7 @@ export const RelatorioIndicador12Page: React.FC = () => {
   }, [estabelecimentosFiltrados, paginaAtual, itensPorPagina]);
 
   const handleImprimir = () => {
-    window.print();
+    safePrint();
   };
 
   const formatarData = (dataIso?: string) => {

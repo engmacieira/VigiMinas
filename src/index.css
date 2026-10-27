@@ -37,27 +37,64 @@
   background: #94a3b8;
 }
 
-/* Regras de Impressão do Termo VAPT em Folha A4 Oficial */
+/* Regras Globais de Impressão Oficial e Relatórios (A4 Portrait) */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
   body * {
     visibility: hidden;
   }
-  #termo-oficial-print, #termo-oficial-print * {
+  /* Libera a impressão tanto do termo VAPT quanto do Aviso de Vistoria e Relatórios */
+  #termo-oficial-print, #termo-oficial-print *,
+  #aviso-vistoria-print, #aviso-vistoria-print *,
+  .print-container, .print-container * {
     visibility: visible;
   }
-  #termo-oficial-print {
+  #termo-oficial-print, #aviso-vistoria-print {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 20mm !important;
+    padding: 10mm 15mm !important;
     background: white !important;
     color: black !important;
     box-shadow: none !important;
+    border: none !important;
   }
-  @page {
-    size: A4 portrait;
-    margin: 12mm;
+
+  /* Se o modal de aviso ou termo estiver aberto, oculta o container de fundo para não sobrepor */
+  body:has(#aviso-vistoria-print) .print-container,
+  body:has(#termo-oficial-print) .print-container {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+  /* Forçar remoção de elementos marcados */
+  .print\:hidden,
+  nav,
+  aside,
+  header,
+  button:not(.print-keep),
+  input,
+  select {
+    display: none !important;
+  }
+  /* Garantir visibilidade dos elementos exclusivos de impressão */
+  .print\:block {
+    display: block !important;
+  }
+  .print\:grid {
+    display: grid !important;
+  }
+  .print\:flex {
+    display: flex !important;
+  }
+  /* Evitar quebra inadequada de tabelas e blocos */
+  tr, .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

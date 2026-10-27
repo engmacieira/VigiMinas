@@ -46,11 +46,12 @@ service cloud.firestore {
 
     // Coleção de Logs de Auditoria e Transparência Fiscalizatória (Middleware)
     match /logs_auditoria/{logId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow create: if isValidId(logId) &&
         request.resource.data.recursoId is string &&
         request.resource.data.operacao is string &&
-        request.resource.data.colecao is string;
+        request.resource.data.colecao is string &&
+        (!('usuarioId' in request.resource.data) || request.resource.data.usuarioId == request.auth.uid);
       allow update: if false; // Logs são estritamente imutáveis (append-only)
       allow delete: if false; // Proibida a exclusão de logs de auditoria
     }
@@ -66,12 +67,19 @@ service cloud.firestore {
 
     // Coleção de Usuários e Perfis de Acesso (RBAC)
     match /usuarios/{usuarioId} {
-      allow read: if true;
-      allow create, update: if isValidId(usuarioId) &&
+      allow read: if isAuthenticated() && (isOwner(usuarioId) || isAdminMaster());
+      allow create: if isAuthenticated() && isAdminMaster() && isValidId(usuarioId) &&
         request.resource.data.username is string &&
         request.resource.data.username.size() > 0 &&
         request.resource.data.funcao in ['admin_master', 'fiscal_tecnico', 'digitador'];
-      allow delete: if isValidId(usuarioId);
+      allow update: if isAuthenticated() && isValidId(usuarioId) && (
+        isAdminMaster() || (
+          isOwner(usuarioId) &&
+          request.resource.data.funcao == resource.data.funcao &&
+          request.resource.data.ativo == resource.data.ativo
+        )
+      );
+      allow delete: if isAuthenticated() && isAdminMaster() && isValidId(usuarioId);
     }
   }
 }

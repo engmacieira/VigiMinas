@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { Estabelecimento, NivelRisco, SituacaoAlvara } from '../types/vigiminas';
+import { safePrint } from '../utils/printHelper';
 
 interface HistoricoItem {
   id: string;
@@ -212,7 +213,7 @@ export const FichaIndividualEmpresaPage: React.FC = () => {
   };
 
   const handleImprimir = () => {
-    window.print();
+    safePrint();
   };
 
   const hoje = new Date();

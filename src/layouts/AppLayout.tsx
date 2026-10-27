@@ -32,19 +32,23 @@ export const AppLayout: React.FC = () => {
       )}
 
       {/* 1. NAVEGAÇÃO LATERAL OBRIGATÓRIA (SIDEBAR / DRAWER) */}
-      <Sidebar 
-        mobileOpen={mobileSidebarOpen} 
-        onCloseMobile={() => setMobileSidebarOpen(false)} 
-      />
+      <div className="print:hidden">
+        <Sidebar 
+          mobileOpen={mobileSidebarOpen} 
+          onCloseMobile={() => setMobileSidebarOpen(false)} 
+        />
+      </div>
 
       {/* 2. CONTEÚDO PRINCIPAL (HEADER SECUNDÁRIO + TELAS) */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen print:min-h-0 print:block print:w-full">
         
         {/* Header Secundário: Breadcrumbs/Título, Busca Cmd+K, Notificações */}
-        <Header onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
+        <div className="print:hidden">
+          <Header onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
+        </div>
 
         {/* Área de Visualização das Páginas */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 print:p-0 print:m-0 print:max-w-none print:w-full print-container">
           {loading && estabelecimentos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-slate-500">
               <div className="w-9 h-9 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3.5" />

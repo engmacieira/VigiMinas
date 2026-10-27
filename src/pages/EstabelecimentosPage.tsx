@@ -8,6 +8,7 @@ import { ImportarPlanilhaModal } from '../components/ImportarPlanilhaModal';
 import { ExportarEstabelecimentosModal } from '../components/ExportarEstabelecimentosModal';
 import { CalendarioInspecoesView } from '../components/CalendarioInspecoesView';
 import { ConfirmarExclusaoModal } from '../components/ConfirmarExclusaoModal';
+import { AvisoVistoriaModal } from '../components/AvisoVistoriaModal';
 import { Estabelecimento } from '../types/vigiminas';
 import { Building2, CalendarDays } from 'lucide-react';
 
@@ -36,6 +37,10 @@ export const EstabelecimentosPage: React.FC = () => {
   const [modalImportarAberto, setModalImportarAberto] = useState(false);
   const [modalExportarAberto, setModalExportarAberto] = useState(false);
   const [estabelecimentosFiltrados, setEstabelecimentosFiltrados] = useState<Estabelecimento[]>([]);
+
+  // Modal de Aviso de Vistoria Sanitária Anual Programada
+  const [modalAvisoAberto, setModalAvisoAberto] = useState(false);
+  const [estParaAviso, setEstParaAviso] = useState<Estabelecimento | null>(null);
 
   // Estado para confirmação de soft delete auditável (arquivamento ou remoção da visão)
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
@@ -124,6 +129,11 @@ export const EstabelecimentosPage: React.FC = () => {
     navigate('/saude-trabalhador', { state: { estabelecimentoVinculado: est } });
   };
 
+  const handleAbrirAvisoVistoria = (est: Estabelecimento) => {
+    setEstParaAviso(est);
+    setModalAvisoAberto(true);
+  };
+
   return (
     <div className="space-y-4">
       {/* Barra de Alternância de Visualização (Tabela vs Calendário) */}
@@ -183,6 +193,7 @@ export const EstabelecimentosPage: React.FC = () => {
             setModalExportarAberto(true);
           }}
           onVerCalendario={() => setModoVisualizacao('calendario')}
+          onAbrirAvisoVistoria={handleAbrirAvisoVistoria}
         />
       ) : (
         <CalendarioInspecoesView
@@ -231,6 +242,16 @@ export const EstabelecimentosPage: React.FC = () => {
         subtituloEntidade={estParaExcluir?.cnpj ? `CNPJ/CPF: ${estParaExcluir.cnpj}` : undefined}
         identificador={estParaExcluir?.id}
         isPermanentAction={estParaExcluir?.isPermanent || false}
+      />
+
+      <AvisoVistoriaModal
+        isOpen={modalAvisoAberto}
+        onClose={() => {
+          setModalAvisoAberto(false);
+          setEstParaAviso(null);
+        }}
+        estabelecimento={estParaAviso}
+        estabelecimentos={estabelecimentos}
       />
     </div>
   );

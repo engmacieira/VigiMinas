@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { InspecaoVapt, Estabelecimento } from '../types/vigiminas';
+import { safePrint } from '../utils/printHelper';
 
 interface PorteOpcao {
   id: string;
@@ -171,7 +172,7 @@ export const RelatorioIndicador11Page: React.FC = () => {
   }, [inspecoesRealizadas, metaPrevista]);
 
   const handlePrint = () => {
-    window.print();
+    safePrint();
   };
 
   const formatarData = (dataIso?: string) => {
@@ -850,7 +851,7 @@ export const RelatorioIndicador11Page: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setTermoSelecionadoModal(null);
-                    window.print();
+                    safePrint();
                   }}
                   className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                 >

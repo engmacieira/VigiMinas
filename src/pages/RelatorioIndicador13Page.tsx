@@ -25,6 +25,7 @@ import {
 import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { Estabelecimento } from '../types/vigiminas';
 import { RegistrarInspecaoModal } from '../components/RegistrarInspecaoModal';
+import { safePrint } from '../utils/printHelper';
 
 export const RelatorioIndicador13Page: React.FC = () => {
   const { 
@@ -137,7 +138,7 @@ export const RelatorioIndicador13Page: React.FC = () => {
   };
 
   const handleImprimir = () => {
-    window.print();
+    safePrint();
   };
 
   const formatarData = (dataIso?: string) => {

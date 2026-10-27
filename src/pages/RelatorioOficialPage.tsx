@@ -13,6 +13,7 @@ import { useVigiMinas } from '../contexts/VigiMinasContext';
 import { useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { UserCheck } from 'lucide-react';
+import { safePrint } from '../utils/printHelper';
 
 export const RelatorioOficialPage: React.FC = () => {
   const { indicadores, estabelecimentos, exportarPlanilha, configuracao } = useVigiMinas();
@@ -42,7 +43,7 @@ export const RelatorioOficialPage: React.FC = () => {
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => window.print()}
+            onClick={() => safePrint()}
             className="min-h-[44px] px-3.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-2 cursor-pointer border border-slate-700"
           >
             <Printer className="w-4 h-4 text-slate-300" />
