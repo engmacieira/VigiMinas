@@ -83,6 +83,33 @@ describe('printHelper (safePrint)', () => {
     }
   });
 
+  it('imprime elemento específico quando targetElementId é fornecido ou existe no DOM', () => {
+    const div = document.createElement('div');
+    div.id = 'aviso-vistoria-print';
+    div.innerHTML = '<h1>Aviso de Vistoria Oficial</h1>';
+    document.body.appendChild(div);
+
+    const mockDoc = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(),
+    };
+    const mockWin = {
+      document: mockDoc,
+      focus: vi.fn(),
+      print: vi.fn(),
+    };
+    window.open = vi.fn().mockReturnValue(mockWin);
+
+    safePrint('aviso-vistoria-print');
+
+    expect(window.open).toHaveBeenCalledWith('', '_blank', 'width=950,height=850');
+    expect(mockDoc.write).toHaveBeenCalledWith(expect.stringContaining('Aviso de Vistoria Oficial'));
+    expect(mockDoc.close).toHaveBeenCalled();
+
+    document.body.removeChild(div);
+  });
+
   it('não lança erro não tratado se window.print disparar exceção', () => {
     window.print = vi.fn().mockImplementation(() => {
       throw new Error('Print error');

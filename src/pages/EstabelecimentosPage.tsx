@@ -137,7 +137,7 @@ export const EstabelecimentosPage: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Barra de Alternância de Visualização (Tabela vs Calendário) */}
-      <div className="flex items-center justify-between pb-1 flex-wrap gap-3">
+      <div className="flex items-center justify-between pb-1 flex-wrap gap-3 print:hidden">
         <div className="inline-flex bg-slate-200/90 p-1 rounded-xl border border-slate-300 shadow-2xs">
           <button
             type="button"
@@ -175,33 +175,35 @@ export const EstabelecimentosPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Exibição Condicional do Módulo */}
-      {modoVisualizacao === 'tabela' ? (
-        <EstabelecimentosList
-          estabelecimentos={estabelecimentos}
-          onNovoEstabelecimento={handleNovo}
-          onEditarEstabelecimento={handleEditar}
-          onExcluirEstabelecimento={handleSolicitarExcluir}
-          onExcluirPermanente={handleSolicitarExcluirPermanente}
-          onRestaurarEstabelecimento={handleRestaurar}
-          onRegistrarInspecaoRapida={handleAbrirInspecao}
-          onCriarVaptVinculada={handleCriarVaptVinculada}
-          onExportExcel={exportarPlanilha}
-          onImportarPlanilha={() => setModalImportarAberto(true)}
-          onAbrirExportacao={(filtrados) => {
-            setEstabelecimentosFiltrados(filtrados);
-            setModalExportarAberto(true);
-          }}
-          onVerCalendario={() => setModoVisualizacao('calendario')}
-          onAbrirAvisoVistoria={handleAbrirAvisoVistoria}
-        />
-      ) : (
-        <CalendarioInspecoesView
-          onRegistrarInspecaoRapida={handleAbrirInspecao}
-          onEditarEstabelecimento={handleEditar}
-          onNovoEstabelecimento={handleNovo}
-        />
-      )}
+      {/* Exibição Condicional do Módulo (Oculto na impressão se o Aviso de Vistoria estiver ativo) */}
+      <div className={`ocultar-ao-imprimir-aviso ${modalAvisoAberto ? 'print:hidden' : ''}`}>
+        {modoVisualizacao === 'tabela' ? (
+          <EstabelecimentosList
+            estabelecimentos={estabelecimentos}
+            onNovoEstabelecimento={handleNovo}
+            onEditarEstabelecimento={handleEditar}
+            onExcluirEstabelecimento={handleSolicitarExcluir}
+            onExcluirPermanente={handleSolicitarExcluirPermanente}
+            onRestaurarEstabelecimento={handleRestaurar}
+            onRegistrarInspecaoRapida={handleAbrirInspecao}
+            onCriarVaptVinculada={handleCriarVaptVinculada}
+            onExportExcel={exportarPlanilha}
+            onImportarPlanilha={() => setModalImportarAberto(true)}
+            onAbrirExportacao={(filtrados) => {
+              setEstabelecimentosFiltrados(filtrados);
+              setModalExportarAberto(true);
+            }}
+            onVerCalendario={() => setModoVisualizacao('calendario')}
+            onAbrirAvisoVistoria={handleAbrirAvisoVistoria}
+          />
+        ) : (
+          <CalendarioInspecoesView
+            onRegistrarInspecaoRapida={handleAbrirInspecao}
+            onEditarEstabelecimento={handleEditar}
+            onNovoEstabelecimento={handleNovo}
+          />
+        )}
+      </div>
 
       <EstabelecimentoModal
         isOpen={modalEstAberto}

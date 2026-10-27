@@ -34,7 +34,9 @@ export const AvisoVistoriaModal: React.FC<AvisoVistoriaModalProps> = ({
   estabelecimentos = []
 }) => {
   const { configuracao } = useVigiMinas();
-  const [empresaSelecionada, setEmpresaSelecionada] = useState<Estabelecimento | null>(estabelecimento);
+  const [empresaSelecionada, setEmpresaSelecionada] = useState<Estabelecimento | null>(() => {
+    return estabelecimento || (estabelecimentos && estabelecimentos.length > 0 ? estabelecimentos[0] : null);
+  });
   const [dataPrevisao, setDataPrevisao] = useState<string>('09 de novembro');
   const [nomeRecebedor, setNomeRecebedor] = useState<string>('');
 
@@ -42,13 +44,13 @@ export const AvisoVistoriaModal: React.FC<AvisoVistoriaModalProps> = ({
     if (estabelecimento) {
       setEmpresaSelecionada(estabelecimento);
     } else if (estabelecimentos && estabelecimentos.length > 0) {
-      setEmpresaSelecionada(estabelecimentos[0]);
+      setEmpresaSelecionada(prev => prev || estabelecimentos[0]);
     }
   }, [estabelecimento, estabelecimentos]);
 
   if (!isOpen) return null;
 
-  const est = empresaSelecionada || estabelecimento;
+  const est = empresaSelecionada || estabelecimento || (estabelecimentos && estabelecimentos.length > 0 ? estabelecimentos[0] : null);
 
   const municipioNome = configuracao?.secretaria?.municipio || 'Braúnas';
   const ufSigla = configuracao?.secretaria?.uf || 'MG';
@@ -56,7 +58,7 @@ export const AvisoVistoriaModal: React.FC<AvisoVistoriaModalProps> = ({
   const hoje = new Date().toLocaleDateString('pt-BR');
 
   const handlePrint = () => {
-    safePrint();
+    safePrint('aviso-vistoria-print');
   };
 
   const isAltoOuMedioRisco = est?.nivelRisco === 'Risco II' || est?.nivelRisco === 'Risco III';
@@ -68,7 +70,7 @@ export const AvisoVistoriaModal: React.FC<AvisoVistoriaModalProps> = ({
       aria-modal="true"
       aria-labelledby="aviso-vistoria-titulo"
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 my-auto text-slate-900 print:border-none print:shadow-none print:rounded-none print:m-0 print:max-w-none">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 my-auto text-slate-900 print:border-none print:shadow-none print:rounded-none print:m-0 print:max-w-none print:overflow-visible">
         
         {/* ============================================================== */}
         {/* BARRA DE CONTROLE SUPERIOR (OCULTA NA IMPRESSÃO)               */}

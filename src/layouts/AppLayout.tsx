@@ -48,7 +48,7 @@ export const AppLayout: React.FC = () => {
         </div>
 
         {/* Área de Visualização das Páginas */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 print:p-0 print:m-0 print:max-w-none print:w-full print-container">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 print:p-0 print:m-0 print:max-w-none print:w-full">
           {loading && estabelecimentos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-slate-500">
               <div className="w-9 h-9 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3.5" />
@@ -56,7 +56,7 @@ export const AppLayout: React.FC = () => {
               <p className="text-[11px] text-slate-400 mt-0.5">Sincronizando com Firestore e regras de auditoria</p>
             </div>
           ) : (
-            <div className="transition duration-150 ease-out">
+            <div className="transition duration-150 ease-out print:w-full print:p-0">
               <Outlet />
             </div>
           )}
