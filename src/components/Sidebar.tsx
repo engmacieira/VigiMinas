@@ -326,9 +326,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
             </p>
             <nav className="space-y-1">
               
-              {/* Relatório Oficial SES/MG */}
+              {/* Central de Relatórios */}
               <NavLink
-                to="/relatorio-oficial"
+                to="/relatorios"
                 onClick={handleNavClick}
                 className={({ isActive }) =>
                   `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition duration-150 ease-out active:scale-[0.98] relative ${
@@ -340,10 +340,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <FileText className="w-4 h-4 text-sky-400 shrink-0" strokeWidth={2} />
-                  <span className="truncate">Relatório Oficial SES/MG</span>
+                  <span className="truncate">Central de Relatórios</span>
                 </div>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/80 shrink-0">
-                  Oficial
+                  Hub
                 </span>
               </NavLink>
 

@@ -25,6 +25,7 @@ export interface Contato {
 export interface Estabelecimento {
   id: string;
   cnpjCpf: string;
+  cnpj?: string; // Alias para compatibilidade com relatórios e mocks
   identificacaoMunicipal?: string; // Identificação / Inscrição Municipal (alfanumérico, opcional)
   razaoSocial: string;
   nomeFantasia: string;
