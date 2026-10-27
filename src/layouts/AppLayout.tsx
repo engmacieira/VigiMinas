@@ -31,8 +31,8 @@ export const AppLayout: React.FC = () => {
         </div>
       )}
 
-      {/* 1. NAVEGAÇÃO LATERAL OBRIGATÓRIA (SIDEBAR / DRAWER) */}
-      <div className="print:hidden">
+      {/* 1. NAVEGAÇÃO LATERAL OBRIGATÓRIA (SIDEBAR / DRAWER) - Coluna contínua de altura total para eliminar vácuo */}
+      <div className="print:hidden shrink-0 lg:w-64 lg:bg-slate-900 lg:border-r lg:border-slate-800 lg:self-stretch lg:min-h-screen">
         <Sidebar 
           mobileOpen={mobileSidebarOpen} 
           onCloseMobile={() => setMobileSidebarOpen(false)} 

@@ -10,9 +10,9 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Impede qualquer scroll horizontal acidental */
+  /* Impede qualquer scroll horizontal acidental sem quebrar o position: sticky da Sidebar */
   html, body {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 }
 
